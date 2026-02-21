@@ -1,0 +1,21 @@
+{% load static %}
+
+<html>
+    <!-- Metadata -->
+    <head>
+        <title>Two Chic Manila</title>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,400,500,700|Material+Icons">
+        <link rel="stylesheet" href="{% static '/bootstrap/css/bootstrap.min.css' %}">
+        <link rel="stylesheet" href="{% static '/bootstrap/css/custom.css' %}">
+        <script src="{% static '/bootstrap/js/bootstrap.bundle.min.js' %}"></script>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    </head>
+    <!-- Page content -->
+<body>
+
+    {% block content %}{% endblock %}
+
+    <!-- Bootstrap JS -->
+    <script src="{% static 'system_app/bootstrap/js/bootstrap.bundle.min.js' %}"></script>
+</body>
+</html>
