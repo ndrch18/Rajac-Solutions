@@ -29,6 +29,34 @@ def logout_view(request):
     request.session.pop('account_id', None) 
     return redirect('login')
 
+def change_password_view(request):
+    # must be logged in
+    account_id = request.session.get('account_id')
+    if not account_id:
+        return redirect('login')
+
+    message = ""
+
+    if request.method == "POST":
+        current_pw = request.POST.get("current_password")
+        new_pw = request.POST.get("new_password")
+        confirm_pw = request.POST.get("confirm_password")
+
+        account = Account.objects.get(id=account_id)
+
+        if current_pw != account.password:
+            message = "Current password is incorrect."
+        elif not new_pw:
+            message = "New password cannot be empty."
+        elif new_pw != confirm_pw:
+            message = "New passwords do not match."
+        else:
+            account.password = new_pw
+            account.save()
+            message = "Password changed successfully!"
+
+    return render(request, "system_app/change_password.html", {"message": message})
+
 
 def prodman_homepage(request):
     if not request.session.get('account_id'):
@@ -43,7 +71,7 @@ def prodman_matinv(request):
 
     # GET filters
     q = (request.GET.get('q') or "").strip()
-    category = (request.GET.get('category') or "fabrics").strip()
+    category = (request.GET.get('category') or "all")
 
     qs = RawMaterial.objects.all()
 
@@ -61,6 +89,7 @@ def prodman_matinv(request):
         "q": q,
         "as_of": timezone.localtime(timezone.now()),
         "category_choices": [
+            ("all", "All"),
             ("fabrics", "Fabrics"),
             ("trims", "Trims"),
             ("accessories", "Accessories"),

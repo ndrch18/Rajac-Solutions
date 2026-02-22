@@ -58,3 +58,21 @@ body { font-family: 'Montserrat', sans-serif; }
     font-weight: 500;
     color: #333;
 }
+
+.account-icon {
+    font-size: 32px;
+    cursor: pointer;
+}
+
+/* small card look */
+.account-card {
+  min-width: 180px;
+  right: 0;
+  left: auto;
+}
+
+.account-card .dropdown-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
