@@ -71,7 +71,6 @@ def prodman_homepage(request):
     return render(request, 'system_app/prodman_home.html')
 
 def prodman_matinv(request):
-<<<<<<< HEAD
     # Protect page
     if not request.session.get('account_id'):
         return redirect('login')
@@ -79,11 +78,9 @@ def prodman_matinv(request):
     # -------------------------
     # GET FILTERS
     # -------------------------
-=======
     if not request.session.get('account_id'):
         return redirect('login')
 
->>>>>>> 46c081d808fa3649fe1f3fd708f6ca399f6e906e
     q = (request.GET.get('q') or "").strip()
     category = (request.GET.get('category') or "all").strip()
     sort = (request.GET.get('sort') or "alpha").strip()  # default A–Z

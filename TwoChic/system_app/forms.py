@@ -1,5 +1,5 @@
 from django import forms
-from .models import RawMaterial, MaterialUnit
+from .models import RawMaterial, MaterialUnit, MaterialCategory
 
 class RawMaterialForm(forms.ModelForm):
     class Meta:
@@ -15,9 +15,12 @@ class RawMaterialForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
+        # Set custom placeholder for category (use MaterialCategory.choices to avoid separator)
+        self.fields["material_category"].choices = [("", "Choose Category")] + list(MaterialCategory.choices)
+
         # add your modal classes
         self.fields["material_category"].widget.attrs.update({"class": "form-select custom-input", "id": "id_material_category"})
-        self.fields["material_name"].widget.attrs.update({"class": "form-control custom-input", "placeholder": "Enter Fabric Name"})
+        self.fields["material_name"].widget.attrs.update({"class": "form-control custom-input", "placeholder": "Enter Material Name"})
         self.fields["material_unit"].widget.attrs.update({"class": "form-select custom-input", "id": "id_material_unit"})
         self.fields["material_quantity"].widget.attrs.update({"class": "form-control custom-input", "placeholder": "Enter quantity"})
         self.fields["material_unitprice"].widget.attrs.update({"class": "form-control custom-input", "placeholder": "Enter Unit Price", "step": "0.01"})
