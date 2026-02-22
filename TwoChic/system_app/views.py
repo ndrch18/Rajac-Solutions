@@ -1,4 +1,5 @@
 from django.shortcuts import render, redirect
+from django.utils import timezone
 from system_app.models import Account, RawMaterial
 
 #Global variable for login authentication
@@ -35,5 +36,35 @@ def prodman_homepage(request):
 
     return render(request, 'system_app/prodman_home.html')
 
+def prodman_matinv(request):
+    # Optional: protect page using your session login
+    if not request.session.get('account_id'):
+        return redirect('login')
 
+    # GET filters
+    q = (request.GET.get('q') or "").strip()
+    category = (request.GET.get('category') or "fabrics").strip()
+
+    qs = RawMaterial.objects.all()
+
+    if category in {"fabrics", "trims", "accessories"}:
+        qs = qs.filter(material_category=category)
+
+    if q:
+        qs = qs.filter(material_name__icontains=q)
+
+    qs = qs.order_by("material_name")
+
+    context = {
+        "materials": qs,
+        "selected_category": category,
+        "q": q,
+        "as_of": timezone.localtime(timezone.now()),
+        "category_choices": [
+            ("fabrics", "Fabrics"),
+            ("trims", "Trims"),
+            ("accessories", "Accessories"),
+        ],
+    }
+    return render(request, "system_app/prodman_matinv.html", context)
     

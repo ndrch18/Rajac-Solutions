@@ -23,5 +23,7 @@ urlpatterns = [
     path('', views.login_view, name='login'),
     path('login_view/', views.login_view, name='login'),
     path('logout/', views.logout_view, name='logout'),
+    
     path('prodman/', views.prodman_homepage, name='prodman_homepage'),
+    path('prodman_matinv/', views.prodman_matinv, name='prodman_matinv')
 ]

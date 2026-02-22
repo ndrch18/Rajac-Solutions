@@ -1,22 +1,44 @@
 {% extends 'system_app/base.html' %}
+{% load static %}
+
 
 {% block content %}
-<div class="container text-center mt-5">
-    <h3 class="mb-4">Production Manager Dashboard</h3>
+<div class="container text-center mt-4">
+    <h5 class="mb-4">Production Manager Dashboard</h5>
 
-    <div class="row justify-content-center gap-3">
+    <div class="row justify-content-center">
 
-        <!-- Products button -->
-        <div class="col-10 col-sm-5 col-md-3 mb-4">
-            <a href="#" class="btn btn-primary w-100 py-3">
-                Products
+        <!-- PRODUCTS -->
+        <div class="col-6 col-md-4 mb-4">
+            <a href="#" class="dashboard-card text-dark">
+                <div class="card h-100 shadow-lg">
+                    <div class="card-body d-flex flex-column justify-content-center align-items-center">
+
+                        <img src="{% static 'images/products.png' %}" 
+                             alt="Products" 
+                             class="dashboard-img mb-3">
+
+                        <span class="dashboard-label">Products</span>
+
+                    </div>
+                </div>
             </a>
         </div>
 
-        <!-- Materials button -->
-        <div class="col-10 col-sm-5 col-md-3">
-            <a href="#" class="btn btn-secondary w-100 py-3">
-                Materials
+        <!-- MATERIALS -->
+        <div class="col-6 col-md-4 mb-4">
+            <a href="{% url 'prodman_matinv' %}" class="dashboard-card text-dark">
+                <div class="card h-100 shadow-lg">
+                    <div class="card-body d-flex flex-column justify-content-center align-items-center">
+
+                        <img src="{% static 'images/materials.png' %}" 
+                             alt="Materials" 
+                             class="dashboard-img mb-3">
+
+                        <span class="dashboard-label">Materials</span>
+
+                    </div>
+                </div>
             </a>
         </div>
 

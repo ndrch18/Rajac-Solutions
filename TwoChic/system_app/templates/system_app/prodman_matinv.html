@@ -1,0 +1,109 @@
+{% extends 'system_app/base.html' %}
+{% load static %}
+
+{% block content %}
+
+<div class="container-fluid px-3">
+
+  <!-- Top search + filter icon -->
+  <div class="d-flex align-items-center gap-2 mt-2">
+    <form class="flex-grow-1" method="get" action="">
+      <!-- keep category when searching -->
+      <input type="hidden" name="category" value="{{ selected_category }}"/>
+
+      <div class="input-group inventory-search shadow-sm">
+        <span class="input-group-text bg-white border-0 ps-3">
+          <span class="material-icons text-muted">search</span>
+        </span>
+        <input
+          type="text"
+          class="form-control border-0"
+          name="q"
+          value="{{ q }}"
+          placeholder="Search for Material"
+          aria-label="Search for Material"
+        />
+      </div>
+    </form>
+
+    <button type="button" class="btn filter-btn shadow-sm">
+      <span class="material-icons">tune</span>
+    </button>
+  </div>
+
+  <!-- Inventory as of -->
+  <div class="text-center mt-4 mb-3">
+    <div class="inventory-asof">
+      Inventory as of {{ as_of|date:"n/j/y H:i:s" }}
+    </div>
+  </div>
+
+  <!-- Buttons -->
+  <div class="d-flex flex-column align-items-center gap-3 mb-4">
+    <a href="#" class="btn log-btn shadow-sm d-flex align-items-center justify-content-between">
+      <span class="fw-semibold">Log New Raw Material</span>
+      <span class="material-icons">add_circle</span>
+    </a>
+
+    <a href="#" class="btn order-btn shadow-sm fw-semibold">
+      Generate Order List
+    </a>
+  </div>
+
+  <!-- Category panel -->
+  <div class="category-panel shadow-sm">
+    <div class="category-title">Select Category</div>
+
+    <form method="get" action="">
+      <!-- keep search when changing category -->
+      <input type="hidden" name="q" value="{{ q }}"/>
+
+      <div class="category-select-wrap">
+        <select class="form-select category-select" name="category" onchange="this.form.submit()">
+          {% for val, label in category_choices %}
+            <option value="{{ val }}" {% if selected_category == val %}selected{% endif %}>
+              {{ label }}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+    </form>
+
+    <!-- Table -->
+    <div class="table-responsive mt-3">
+      <table class="table inventory-table mb-0">
+        <thead>
+          <tr>
+            <th>Material</th>
+            <th class="text-center">Meters</th>
+            <th class="text-center">Unit Price</th>
+            <th class="text-center">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for m in materials %}
+            <tr>
+              <td>{{ m.material_name }}</td>
+              <td class="text-center">{{ m.material_quantity }}</td>
+              <td class="text-center">₱{{ m.material_unitprice|floatformat:0 }}</td>
+              <td class="text-center">
+                <a href="#" class="action-icon text-decoration-none">
+                  <span class="material-icons">menu</span>
+                </a>
+              </td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="4" class="text-center py-4 text-muted">
+                No materials found.
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+  </div>
+</div>
+
+{% endblock %}
