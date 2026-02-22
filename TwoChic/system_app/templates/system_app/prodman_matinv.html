@@ -54,15 +54,16 @@
   <div class="category-panel shadow-sm">
     <div class="category-title">Select Category</div>
 
-    <form method="get" action="">
+    <form method="get" action=" ">
       <!-- keep search when changing category -->
       <input type="hidden" name="q" value="{{ q }}"/>
 
       <div class="category-select-wrap">
         <select class="form-select category-select" name="category" onchange="this.form.submit()">
           {% for val, label in category_choices %}
-            <option value="{{ val }}" {% if selected_category == val %}selected{% endif %}>
-              {{ label }}
+            <option value="{{ val }}" 
+                {% if selected_category == val %}selected{% endif %}>
+                {{ label }}
             </option>
           {% endfor %}
         </select>
