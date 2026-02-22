@@ -1,0 +1,48 @@
+body { font-family: 'Montserrat', sans-serif; }
+
+.custom-navbar {
+    background-color: #C6E8ED;
+}
+
+.navbar-brand {
+    font-family: 'Montserrat', sans-serif;
+    letter-spacing: 1px;
+}
+
+.nav-link {
+    color: #000;
+}
+
+.logo-img {
+    height: 40px;  
+    width: auto;
+}
+
+.brand-top {
+    font-family: 'Montserrat', sans-serif;
+    font-weight: 500;
+    font-size: 16px;
+    letter-spacing: 1px;
+}
+
+.brand-bottom {
+    font-family: 'Montserrat', sans-serif;
+    font-weight: 500;
+    font-size: 16px;   /* smaller MANILA */
+    letter-spacing: 2px;
+}
+
+.brand-top,
+.brand-bottom {
+    margin-left: -4px;
+}
+
+.lh-1 { line-height: 1; }
+
+.navbar-brand img {
+    height: 32px;
+    width: auto;
+}
+
+.main-content {
+    padding-top: 50px; }

@@ -1,21 +1,76 @@
 {% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Two Chic Manila</title>
 
-<html>
-    <!-- Metadata -->
-    <head>
-        <title>Two Chic Manila</title>
-        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,400,500,700|Material+Icons">
-        <link rel="stylesheet" href="{% static '/bootstrap/css/bootstrap.min.css' %}">
-        <link rel="stylesheet" href="{% static '/bootstrap/css/custom.css' %}">
-        <script src="{% static '/bootstrap/js/bootstrap.bundle.min.js' %}"></script>
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    </head>
-    <!-- Page content -->
+    <!-- Mobile responsive -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <!-- Font -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&display=swap">
+
+    <!-- Icons -->
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="{% static 'bootstrap/css/bootstrap.min.css' %}">
+
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{% static 'bootstrap/css/custom.css' %}">
+</head>
+
 <body>
+    <!-- Header at the top of the page -->
+    <nav class="navbar navbar-expand-lg shadow-sm custom-navbar fixed-top">
+        <div class="container-fluid d-flex align-items-center">
+            {% if account_id %}
+                <div class="d-flex align-items-center ms-2">
+                    <a class="navbar-brand d-flex align-items-center" href="#">
+                        <img src="{% static 'images/logo.png' %}" alt="Logo" width="20" class="me-0">
+                    </a>
+                
+                    <div class="d-flex flex-column lh-1">
+                        <span class="brand-top">TWO CHIC</span>
+                        <span class="brand-bottom">MANILA</span>
+                    </div>
 
+                    <a href="#" class="text-dark">
+                        <span class="material-icons fs-4"> Welcome! </span>
+                    </a>
+                </div>
+            {% else %}
+                <div class="d-flex align-items-center ms-2">
+                    <a class="navbar-brand d-flex align-items-center" href="#">
+                        <img src="{% static 'images/logo.png' %}" alt="Logo" width="20" class="me-0">
+                    </a>
+                
+                    <div class="d-flex flex-column lh-1">
+                        <span class="brand-top">TWO CHIC</span>
+                        <span class="brand-bottom">MANILA</span>
+                    </div>
+                </div>
+            {% endif %}
+            <div class="d-flex align-items-center ms-2">
+                <a class="navbar-brand d-flex align-items-center" href="#">
+                    <img src="{% static 'images/logo.png' %}" alt="Logo" width="20" class="me-0">
+                </a>
+                
+                <div class="d-flex flex-column lh-1">
+                    <span class="brand-top">TWO CHIC</span>
+                    <span class="brand-bottom">MANILA</span>
+                </div>
+            </div>
+        </div>
+    </nav>
+    
+    <main class="container my-4 main-content">
     {% block content %}{% endblock %}
+    </main>
 
     <!-- Bootstrap JS -->
-    <script src="{% static 'system_app/bootstrap/js/bootstrap.bundle.min.js' %}"></script>
+    <script src="{% static 'bootstrap/js/bootstrap.bundle.min.js' %}"></script>
+
 </body>
 </html>
