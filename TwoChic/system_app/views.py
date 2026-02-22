@@ -71,6 +71,7 @@ def prodman_homepage(request):
     return render(request, 'system_app/prodman_home.html')
 
 def prodman_matinv(request):
+<<<<<<< HEAD
     # Protect page
     if not request.session.get('account_id'):
         return redirect('login')
@@ -78,18 +79,34 @@ def prodman_matinv(request):
     # -------------------------
     # GET FILTERS
     # -------------------------
+=======
+    if not request.session.get('account_id'):
+        return redirect('login')
+
+>>>>>>> 46c081d808fa3649fe1f3fd708f6ca399f6e906e
     q = (request.GET.get('q') or "").strip()
-    category = (request.GET.get('category') or "all")
+    category = (request.GET.get('category') or "all").strip()
+    sort = (request.GET.get('sort') or "alpha").strip()  # default A–Z
 
     qs = RawMaterial.objects.all()
 
+    # Category filter (skip if "all")
     if category in {"fabrics", "trims", "accessories"}:
         qs = qs.filter(material_category=category)
 
+    # Search filter
     if q:
         qs = qs.filter(material_name__icontains=q)
 
-    qs = qs.order_by("material_name")
+    # Sorting
+    if sort == "highest":
+        qs = qs.order_by("-material_quantity", "material_name")
+    elif sort == "lowest":
+        qs = qs.order_by("material_quantity", "material_name")
+    elif sort == "alpha_desc":
+        qs = qs.order_by("-material_name")
+    else:
+        qs = qs.order_by("material_name")  # A–Z
 
     # -------------------------
     # HANDLE MODAL POST
@@ -143,6 +160,7 @@ def prodman_matinv(request):
         "materials": qs,
         "selected_category": category,
         "q": q,
+        "sort": sort,
         "as_of": timezone.localtime(timezone.now()),
         "category_choices": [
             ("all", "All"),
