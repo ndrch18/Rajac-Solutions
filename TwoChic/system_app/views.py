@@ -1,6 +1,12 @@
 from django.shortcuts import render, redirect
 from django.utils import timezone
 from system_app.models import Account, RawMaterial
+from .forms import RawMaterialForm
+from .models import MaterialUnit
+import json
+from django.core.serializers.json import DjangoJSONEncoder
+from django.urls import reverse
+from urllib.parse import urlencode
 
 #Global variable for login authentication
 account_id = 0
@@ -65,11 +71,13 @@ def prodman_homepage(request):
     return render(request, 'system_app/prodman_home.html')
 
 def prodman_matinv(request):
-    # Optional: protect page using your session login
+    # Protect page
     if not request.session.get('account_id'):
         return redirect('login')
 
-    # GET filters
+    # -------------------------
+    # GET FILTERS
+    # -------------------------
     q = (request.GET.get('q') or "").strip()
     category = (request.GET.get('category') or "all")
 
@@ -83,6 +91,54 @@ def prodman_matinv(request):
 
     qs = qs.order_by("material_name")
 
+    # -------------------------
+    # HANDLE MODAL POST
+    # -------------------------
+    if request.method == "POST":
+        form = RawMaterialForm(request.POST)
+
+        if form.is_valid():
+            obj = form.save(commit=False)
+            obj.full_clean()  # runs your RawMaterial.clean()
+            obj.save()
+
+            # Preserve filters on redirect
+            params = {}
+            if category:
+                params["category"] = category
+            if q:
+                params["q"] = q
+
+            url = reverse("prodman_matinv")
+            if params:
+                url = f"{url}?{urlencode(params)}"
+
+            return redirect(url)
+
+    else:
+        form = RawMaterialForm()
+
+    # -------------------------
+    # BUILD UNIT MAP FOR JS
+    # -------------------------
+    units_by_category = {
+        "fabrics": [
+            {"id": u.id, "name": u.unit_name}
+            for u in MaterialUnit.objects.filter(category="fabrics").order_by("unit_name")
+        ],
+        "trims": [
+            {"id": u.id, "name": u.unit_name}
+            for u in MaterialUnit.objects.filter(category="trims").order_by("unit_name")
+        ],
+        "accessories": [
+            {"id": u.id, "name": u.unit_name}
+            for u in MaterialUnit.objects.filter(category="accessories").order_by("unit_name")
+        ],
+    }
+
+    # -------------------------
+    # CONTEXT
+    # -------------------------
     context = {
         "materials": qs,
         "selected_category": category,
@@ -94,6 +150,9 @@ def prodman_matinv(request):
             ("trims", "Trims"),
             ("accessories", "Accessories"),
         ],
+        "form": form,
+        "units_by_category_json": json.dumps(units_by_category, cls=DjangoJSONEncoder),
     }
+
     return render(request, "system_app/prodman_matinv.html", context)
     

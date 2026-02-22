@@ -5,10 +5,9 @@
 
 <div class="container-fluid px-3">
 
-  <!-- Top search + filter icon -->
+  <!-- Search + Filter -->
   <div class="d-flex align-items-center gap-2 mt-2">
     <form class="flex-grow-1" method="get" action="">
-      <!-- keep category when searching -->
       <input type="hidden" name="category" value="{{ selected_category }}"/>
 
       <div class="input-group inventory-search shadow-sm">
@@ -21,7 +20,6 @@
           name="q"
           value="{{ q }}"
           placeholder="Search for Material"
-          aria-label="Search for Material"
         />
       </div>
     </form>
@@ -31,7 +29,7 @@
     </button>
   </div>
 
-  <!-- Inventory as of -->
+  <!-- Inventory Timestamp -->
   <div class="text-center mt-4 mb-3">
     <div class="inventory-asof">
       Inventory as of {{ as_of|date:"n/j/y H:i:s" }}
@@ -40,44 +38,54 @@
 
   <!-- Buttons -->
   <div class="d-flex flex-column align-items-center gap-3 mb-4">
-    <a href="#" class="btn log-btn shadow-sm d-flex align-items-center justify-content-between">
+
+    <!-- LOG BUTTON -->
+    <button type="button"
+      class="btn log-btn shadow-sm d-flex align-items-center justify-content-between"
+      data-bs-toggle="modal"
+      data-bs-target="#logMaterialModal"
+      style="background-color: #A1C2EA">
+
       <span class="fw-semibold">Log New Raw Material</span>
       <span class="material-icons">add_circle</span>
-    </a>
+    </button>
 
     <a href="#" class="btn order-btn shadow-sm fw-semibold">
       Generate Order List
     </a>
   </div>
 
-  <!-- Category panel -->
+  <!-- Category Panel -->
   <div class="category-panel shadow-sm">
+
     <div class="category-title">Select Category</div>
 
-    <form method="get" action=" ">
-      <!-- keep search when changing category -->
+    <form method="get" action="">
       <input type="hidden" name="q" value="{{ q }}"/>
 
       <div class="category-select-wrap">
-        <select class="form-select category-select" name="category" onchange="this.form.submit()">
+        <select class="form-select category-select"
+                name="category"
+                onchange="this.form.submit()">
+
           {% for val, label in category_choices %}
-            <option value="{{ val }}" 
-                {% if selected_category == val %}selected{% endif %}>
-                {{ label }}
+            <option value="{{ val }}"
+              {% if selected_category == val %}selected{% endif %}>
+              {{ label }}
             </option>
           {% endfor %}
         </select>
       </div>
     </form>
 
-    <!-- Table -->
+    <!-- Inventory Table -->
     <div class="table-responsive mt-3">
       <table class="table inventory-table mb-0">
         <thead>
           <tr>
             <th>Material</th>
             <th>Category</th>
-            <th class="text-center">Meters</th>
+            <th class="text-center">Quantity</th>
             <th class="text-center">Unit Price</th>
             <th class="text-center">Actions</th>
           </tr>
@@ -86,7 +94,7 @@
           {% for m in materials %}
             <tr>
               <td>{{ m.material_name }}</td>
-              <td>{{ m.material_category}}</td>
+              <td>{{ m.material_category }}</td>
               <td class="text-center">{{ m.material_quantity }}</td>
               <td class="text-center">₱{{ m.material_unitprice|floatformat:0 }}</td>
               <td class="text-center">
@@ -97,7 +105,7 @@
             </tr>
           {% empty %}
             <tr>
-              <td colspan="4" class="text-center py-4 text-muted">
+              <td colspan="5" class="text-center py-4 text-muted">
                 No materials found.
               </td>
             </tr>
@@ -108,5 +116,113 @@
 
   </div>
 </div>
+
+
+<!-- ============================= -->
+<!-- LOG RAW MATERIAL MODAL -->
+<!-- ============================= -->
+
+<div class="modal fade" id="logMaterialModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content custom-modal">
+
+      <div class="modal-body p-4">
+
+        <form method="POST" action="">
+          {% csrf_token %}
+
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Category:</label>
+            {{ form.material_category }}
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Material Name:</label>
+            {{ form.material_name }}
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Unit:</label>
+            {{ form.material_unit }}
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Quantity:</label>
+            {{ form.material_quantity }}
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Unit Price:</label>
+            {{ form.material_unitprice }}
+          </div>
+
+          <div class="d-flex justify-content-end gap-3 mt-4">
+            <button type="button"
+                    class="btn cancel-btn"
+                    data-bs-dismiss="modal">
+              Cancel
+            </button>
+
+            <button type="submit"
+                    class="btn add-btn">
+              Add
+            </button>
+          </div>
+
+        </form>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ============================= -->
+<!-- JS FOR UNIT FILTERING -->
+<!-- ============================= -->
+
+<script>
+  const UNITS_BY_CATEGORY = JSON.parse('{{ units_by_category_json|escapejs }}');
+
+  const categorySelect = document.getElementById("id_material_category");
+  const unitSelect = document.getElementById("id_material_unit");
+
+  function refreshUnits() {
+    if (!categorySelect || !unitSelect) return;
+
+    const cat = categorySelect.value;
+    const units = UNITS_BY_CATEGORY[cat] || [];
+
+    unitSelect.innerHTML = "";
+
+    const placeholder = document.createElement("option");
+    placeholder.value = "";
+    placeholder.textContent = "Choose Unit";
+    placeholder.selected = true;
+    placeholder.disabled = true;
+    unitSelect.appendChild(placeholder);
+
+    units.forEach(u => {
+      const opt = document.createElement("option");
+      opt.value = u.id;
+      opt.textContent = u.name;
+      unitSelect.appendChild(opt);
+    });
+  }
+
+  if (categorySelect && unitSelect) {
+    categorySelect.addEventListener("change", refreshUnits);
+    refreshUnits();
+  }
+</script>
+
+
+<!-- Auto reopen modal if form has errors -->
+{% if form.errors %}
+<script>
+  const modal = new bootstrap.Modal(document.getElementById('logMaterialModal'));
+  modal.show();
+</script>
+{% endif %}
 
 {% endblock %}
