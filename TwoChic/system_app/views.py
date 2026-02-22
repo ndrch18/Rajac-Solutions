@@ -71,7 +71,7 @@ def prodman_matinv(request):
 
     # GET filters
     q = (request.GET.get('q') or "").strip()
-    category = (request.GET.get('category') or "fabrics").strip()
+    category = (request.GET.get('category') or "all")
 
     qs = RawMaterial.objects.all()
 
