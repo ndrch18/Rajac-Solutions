@@ -2,6 +2,16 @@ from django.db import models
 from django.core.validators import MinValueValidator
 from django.core.exceptions import ValidationError
 
+class Account(models.Model):
+    username = models.CharField(max_length=50, unique=True)
+    password = models.CharField(max_length=50)
+
+    def getUsername(self):
+        return self.username
+
+    def getPassword(self):
+        return self.password
+
 class MaterialCategory(models.TextChoices):
     FABRICS = 'fabrics', 'Fabrics'
     TRIMS = 'trims', 'Trims'
