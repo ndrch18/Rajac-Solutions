@@ -3,7 +3,7 @@ from django.core.validators import MinValueValidator
 from django.core.exceptions import ValidationError
 
 class Account(models.Model):
-    username = models.CharField(max_length=50, unique=True)
+    employee_id = models.CharField(max_length=50, unique=True)
     password = models.CharField(max_length=50)
 
     def getUsername(self):

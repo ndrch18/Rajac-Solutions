@@ -25,27 +25,31 @@
     <!-- Header at the top of the page -->
     <nav class="navbar navbar-expand-lg shadow-sm custom-navbar fixed-top">
         <div class="container-fluid d-flex align-items-center">
-            {% if account_id %}
-                <div class="d-flex align-items-center ms-2">
-                    <a class="navbar-brand d-flex align-items-center" href="#">
-                        <img src="{% static 'images/logo.png' %}" alt="Logo" width="20" class="me-0">
-                    </a>
+        <!-- RIGHT: Account Icon (only when logged in) -->
+            {% if request.session.account_id %}
                 
-                    <div class="d-flex flex-column lh-1">
+                <div class="d-flex align-items-center ms-2">
+                    <a class="navbar-brand d-flex align-items-center" href="{% url 'prodman_homepage' %}">
+                        <img src="{% static 'images/logo.png' %}" alt="Logo" width="20" class="me-2">
+                    </a>
+
+                    <a class="d-flex flex-column lh-1 text-dark" href="{% url 'prodman_homepage' %}">
                         <span class="brand-top">TWO CHIC</span>
                         <span class="brand-bottom">MANILA</span>
-                    </div>
-
-                    <a href="#" class="text-dark">
-                        <span class="material-icons fs-4"> Welcome! </span>
                     </a>
                 </div>
+                <div class="ms-auto me-3">
+                    <a href="{% url 'logout' %}" class="text-dark text-decoration-none">
+                        <span class="material-icons account-icon">account_circle</span>
+                    </a>
+                </div>
+
             {% else %}
                 <div class="d-flex align-items-center ms-2">
-                    <a class="navbar-brand d-flex align-items-center" href="#">
-                        <img src="{% static 'images/logo.png' %}" alt="Logo" width="20" class="me-0">
-                    </a>
-                
+                    <div class="navbar-brand d-flex align-items-center">
+                        <img src="{% static 'images/logo.png' %}" alt="Logo" width="20" class="me-2">
+                    </div>
+
                     <div class="d-flex flex-column lh-1">
                         <span class="brand-top">TWO CHIC</span>
                         <span class="brand-bottom">MANILA</span>
