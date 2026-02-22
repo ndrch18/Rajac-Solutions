@@ -76,7 +76,7 @@
         <thead>
           <tr>
             <th>Material</th>
-            <th>Category</th>
+            
             <th class="text-center">Meters</th>
             <th class="text-center">Unit Price</th>
             <th class="text-center">Actions</th>
@@ -86,7 +86,7 @@
           {% for m in materials %}
             <tr>
               <td>{{ m.material_name }}</td>
-              <td>{{ m.material_category}}</td>
+              
               <td class="text-center">{{ m.material_quantity }}</td>
               <td class="text-center">₱{{ m.material_unitprice|floatformat:0 }}</td>
               <td class="text-center">
