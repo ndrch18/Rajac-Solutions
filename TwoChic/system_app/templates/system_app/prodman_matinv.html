@@ -26,9 +26,49 @@
       </div>
     </form>
 
-    <button type="button" class="btn filter-btn shadow-sm">
-      <span class="material-icons">tune</span>
+   <div class="dropdown">
+    <button class="btn btn-light shadow-sm dropdown-toggle"
+            type="button"
+            data-toggle="dropdown"
+            aria-expanded="false">
+
+        <span class="material-icons">tune</span>
     </button>
+
+    <ul class="dropdown-menu dropdown-menu-end">
+
+        <li>
+            <a class="dropdown-item"
+               href="?category={{ selected_category }}&q={{ q }}&sort=alpha">
+                Alphabetical (A–Z)
+            </a>
+        </li>
+
+        <li>
+            <a class="dropdown-item"
+               href="?category={{ selected_category }}&q={{ q }}&sort=alpha_desc">
+                Alphabetical (Z–A)
+            </a>
+        </li>
+
+        <li><hr class="dropdown-divider"></li>
+
+        <li>
+            <a class="dropdown-item"
+               href="?category={{ selected_category }}&q={{ q }}&sort=highest">
+                Highest Quantity
+            </a>
+        </li>
+
+        <li>
+            <a class="dropdown-item"
+               href="?category={{ selected_category }}&q={{ q }}&sort=lowest">
+                Lowest Quantity
+            </a>
+        </li>
+
+    </ul>
+  </div>
   </div>
 
   <!-- Inventory as of -->

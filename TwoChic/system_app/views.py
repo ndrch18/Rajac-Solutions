@@ -65,28 +65,38 @@ def prodman_homepage(request):
     return render(request, 'system_app/prodman_home.html')
 
 def prodman_matinv(request):
-    # Optional: protect page using your session login
     if not request.session.get('account_id'):
         return redirect('login')
 
-    # GET filters
     q = (request.GET.get('q') or "").strip()
-    category = (request.GET.get('category') or "all")
+    category = (request.GET.get('category') or "all").strip()
+    sort = (request.GET.get('sort') or "alpha").strip()  # default A–Z
 
     qs = RawMaterial.objects.all()
 
+    # Category filter (skip if "all")
     if category in {"fabrics", "trims", "accessories"}:
         qs = qs.filter(material_category=category)
 
+    # Search filter
     if q:
         qs = qs.filter(material_name__icontains=q)
 
-    qs = qs.order_by("material_name")
+    # Sorting
+    if sort == "highest":
+        qs = qs.order_by("-material_quantity", "material_name")
+    elif sort == "lowest":
+        qs = qs.order_by("material_quantity", "material_name")
+    elif sort == "alpha_desc":
+        qs = qs.order_by("-material_name")
+    else:
+        qs = qs.order_by("material_name")  # A–Z
 
     context = {
         "materials": qs,
         "selected_category": category,
         "q": q,
+        "sort": sort,
         "as_of": timezone.localtime(timezone.now()),
         "category_choices": [
             ("all", "All"),
