@@ -126,17 +126,15 @@
         <thead>
           <tr>
             <th>Material</th>
-            <th>Category</th>
-            <th class="text-center">Quantity</th>
+            <th class="text-center">Qty.</th>
             <th class="text-center">Unit Price</th>
-            <th class="text-center">Actions</th>
+            <th class="text-center">Action</th>
           </tr>
         </thead>
         <tbody>
           {% for m in materials %}
             <tr>
               <td>{{ m.material_name }}</td>
-              <td>{{ m.get_material_category_display }}</td>
               <td class="text-center">{{ m.material_quantity }}</td>
               <td class="text-center">₱{{ m.material_unitprice|floatformat:0 }}</td>
               <td class="text-center">
@@ -274,9 +272,9 @@
         <div class="modal-actions">
 
           <!-- Cancel -->
-          <button type="button" class="btn cancel-btn" data-bs-dismiss="modal">
-            Cancel
-          </button>
+<a href="?category={{ selected_category }}&q={{ q }}&sort={{ sort }}" class="btn cancel-btn" style="text-decoration: none;">
+    Cancel
+</a>
 
           <!-- Delete Form -->
           {% if edit_target %}
@@ -361,17 +359,5 @@
   modal.show();
 </script>
 {% endif %}
-
-<!-- Edit modal close handler -->
-<script>
-  const editModalEl = document.getElementById("editMaterialModal");
-  if (editModalEl) {
-    editModalEl.addEventListener("hidden.bs.modal", function () {
-      const url = new URL(window.location.href);
-      url.searchParams.delete("edit");
-      window.history.replaceState({}, "", url.toString());
-    });
-  }
-</script>
 
 {% endblock %}
