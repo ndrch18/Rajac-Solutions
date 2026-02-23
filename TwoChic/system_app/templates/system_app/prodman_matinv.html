@@ -140,7 +140,9 @@
               <td class="text-center">{{ m.material_quantity }}</td>
               <td class="text-center">₱{{ m.material_unitprice|floatformat:0 }}</td>
               <td class="text-center">
-                <a href="#" class="action-icon text-decoration-none">
+                <a href="?edit={{ m.id }}&category={{ selected_category }}&q={{ q }}&sort={{ sort }}"
+                  class="text-decoration-none edit-action"
+                  data-edit-id="{{ m.id }}">
                   <span class="material-icons">menu</span>
                 </a>
               </td>
@@ -155,7 +157,6 @@
         </tbody>
       </table>
     </div>
-
   </div>
 </div>
 
@@ -222,6 +223,84 @@
   </div>
 </div>
 
+{% comment %} EDIT MATERIAL MODAL {% endcomment %}
+<div class="modal fade" id="editMaterialModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content custom-modal">
+      <div class="modal-body p-4">
+
+        <h5 class="fw-bold mb-3">Edit Raw Material</h5>
+
+        <!-- ===================== -->
+        <!-- EDIT FORM -->
+        <!-- ===================== -->
+        {% if edit_target %}
+        <form id="editForm"
+              method="POST"
+              action="{% url 'edit_raw_material' edit_target.id %}?category={{ selected_category }}&q={{ q }}&sort={{ sort }}">
+
+          {% csrf_token %}
+
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Category:</label>
+            {{ edit_form.material_category }}
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Material Name:</label>
+            {{ edit_form.material_name }}
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Unit:</label>
+            {{ edit_form.material_unit }}
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Quantity:</label>
+            {{ edit_form.material_quantity }}
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Unit Price:</label>
+            {{ edit_form.material_unitprice }}
+          </div>
+        </form>
+        {% endif %}
+
+        <!-- ===================== -->
+        <!-- BUTTON ROW -->
+        <!-- ===================== -->
+        <div class="modal-actions">
+
+          <!-- Cancel -->
+          <button type="button" class="btn cancel-btn" data-bs-dismiss="modal">
+            Cancel
+          </button>
+
+          <!-- Delete Form -->
+          {% if edit_target %}
+          <form method="POST"
+                action="{% url 'delete_raw_material' edit_target.id %}?category={{ selected_category }}&q={{ q }}&sort={{ sort }}"
+                class="d-inline">
+            {% csrf_token %}
+            <button type="submit" class="btn delete-btn">
+              Delete
+            </button>
+          </form>
+
+          <!-- Save -->
+          <button type="submit"
+                  form="editForm"
+                  class="btn add-btn">
+            Save
+          </button>
+          {% endif %}
+
+      </div>
+    </div>
+  </div>
+</div>
 
 <!-- ============================= -->
 <!-- JS FOR UNIT FILTERING -->
@@ -262,6 +341,18 @@
   }
 </script>
 
+<!-- Open edit modal on page load if edit parameter exists -->
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.has("edit")) {
+      const editModal = document.getElementById("editMaterialModal");
+      if (editModal) {
+        new bootstrap.Modal(editModal).show();
+      }
+    }
+  });
+</script>
 
 <!-- Auto reopen modal if form has errors -->
 {% if form.errors %}
@@ -270,5 +361,17 @@
   modal.show();
 </script>
 {% endif %}
+
+<!-- Edit modal close handler -->
+<script>
+  const editModalEl = document.getElementById("editMaterialModal");
+  if (editModalEl) {
+    editModalEl.addEventListener("hidden.bs.modal", function () {
+      const url = new URL(window.location.href);
+      url.searchParams.delete("edit");
+      window.history.replaceState({}, "", url.toString());
+    });
+  }
+</script>
 
 {% endblock %}

@@ -26,5 +26,7 @@ urlpatterns = [
     path("change-password/", views.change_password_view, name="change_password"),
     
     path('prodman/', views.prodman_homepage, name='prodman_homepage'),
-    path('prodman_matinv/', views.prodman_matinv, name='prodman_matinv')
+    path('prodman_matinv/', views.prodman_matinv, name='prodman_matinv'),
+    path("prodman/matinv/<int:pk>/edit/", views.edit_raw_material, name="edit_raw_material"),
+    path("prodman/matinv/<int:pk>/delete/", views.delete_raw_material, name="delete_raw_material"),
 ]

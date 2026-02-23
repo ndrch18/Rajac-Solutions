@@ -1,8 +1,10 @@
 from django.shortcuts import render, redirect
+from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from system_app.models import Account, RawMaterial
 from .forms import RawMaterialForm
 from .models import MaterialUnit
+
 import json
 from django.core.serializers.json import DjangoJSONEncoder
 from django.urls import reverse
@@ -151,6 +153,21 @@ def prodman_matinv(request):
     }
 
     # -------------------------
+    #EDIT MODEL SUPPORT
+    # -------------------------
+    edit_id = request.GET.get("edit")
+    edit_target = None
+    edit_form = None
+
+    if edit_id:
+        try:
+            edit_target = RawMaterial.objects.get(pk=int(edit_id))
+            edit_form = RawMaterialForm(instance=edit_target)
+        except (RawMaterial.DoesNotExist, ValueError):
+            edit_target = None
+            edit_form = None
+
+    # -------------------------
     # CONTEXT
     # -------------------------
     context = {
@@ -167,7 +184,81 @@ def prodman_matinv(request):
         ],
         "form": form,
         "units_by_category_json": json.dumps(units_by_category, cls=DjangoJSONEncoder),
+        "edit_target": edit_target,
+        "edit_form": edit_form,
+        "open_edit": bool(edit_target),
     }
 
     return render(request, "system_app/prodman_matinv.html", context)
     
+def edit_raw_material(request, pk):
+    if not request.session.get('account_id'):
+        return redirect('login')
+
+    material = get_object_or_404(RawMaterial, pk=pk)
+
+    # Preserve current filters when redirecting back
+    q = (request.GET.get("q") or "").strip()
+    category = (request.GET.get("category") or "all").strip()
+    sort = (request.GET.get("sort") or "alpha").strip()
+
+    if request.method == "POST":
+        form = RawMaterialForm(request.POST, instance=material)
+        if form.is_valid():
+            obj = form.save(commit=False)
+            obj.full_clean()
+            obj.save()
+
+            params = {}
+            if category:
+                params["category"] = category
+            if q:
+                params["q"] = q
+            if sort:
+                params["sort"] = sort
+
+            url = reverse("prodman_matinv")
+            if params:
+                url = f"{url}?{urlencode(params)}"
+            return redirect(url)
+
+    # If someone visits edit URL directly (GET), just bounce back and open modal
+    params = {"edit": pk}
+    if category:
+        params["category"] = category
+    if q:
+        params["q"] = q
+    if sort:
+        params["sort"] = sort
+
+    url = reverse("prodman_matinv")
+    return redirect(f"{url}?{urlencode(params)}")
+
+def delete_raw_material(request, pk):
+    if not request.session.get('account_id'):
+        return redirect('login')
+
+    material = get_object_or_404(RawMaterial, pk=pk)
+
+    # Preserve filters from URL
+    q = (request.GET.get("q") or "").strip()
+    category = (request.GET.get("category") or "all").strip()
+    sort = (request.GET.get("sort") or "alpha").strip()
+
+    if request.method == "POST":
+        material.delete()
+
+    # Build redirect URL with preserved params
+    params = {}
+    if category:
+        params["category"] = category
+    if q:
+        params["q"] = q
+    if sort:
+        params["sort"] = sort
+
+    url = reverse("prodman_matinv")
+    if params:
+        url = f"{url}?{urlencode(params)}"
+
+    return redirect(url)

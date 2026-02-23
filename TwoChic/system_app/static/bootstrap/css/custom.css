@@ -133,7 +133,47 @@ select.custom-input {
   cursor: pointer;
   font-size: 0.95rem;
 }
-/* Removes the default choices from the dropdown */
-/* select.custom-input option[value=""] {
-  display: none;
-} */
+
+#editMaterialModal .cancel-btn {
+  padding: 12px 28px;
+  border-radius: 10px;
+  border: none;
+  background: #b8babb;
+  color: #000;
+  font-weight: 600;
+  cursor: pointer;
+  font-size: 0.95rem;
+}
+
+#editMaterialModal .delete-btn {
+  padding: 12px 28px;
+  border-radius: 10px;
+  border: none;
+  background: #eaa2a1;
+  color: #000;
+  font-weight: 600;
+  cursor: pointer;
+  font-size: 0.95rem;
+}
+
+#editMaterialModal .add-btn {
+  padding: 12px 28px;
+  border-radius: 10px;
+  border: none;
+  background: #92d193;
+  color: #000;
+  font-weight: 600;
+  cursor: pointer;
+  font-size: 0.95rem;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 16px;
+  margin-top: 20px;
+}
+
+.modal-actions .btn {
+  min-width: 110px;
+}
