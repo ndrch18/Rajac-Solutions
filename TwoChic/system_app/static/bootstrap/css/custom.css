@@ -77,6 +77,17 @@ body { font-family: 'Montserrat', sans-serif; }
     gap: 6px;
 }
 
+.filter-button {
+      min-width: 180px;
+  right: 0;
+  left: auto;
+}
+
+.filter-button .dropdown-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
 /* production manager material inventory forms */
 
 .custom-input {
