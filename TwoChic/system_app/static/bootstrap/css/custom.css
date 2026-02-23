@@ -188,3 +188,18 @@ select.custom-input {
 .modal-actions .btn {
   min-width: 110px;
 }
+
+/* Mobile adjustments for Edit Modal Buttons */
+@media (max-width: 576px) {
+  #editMaterialModal .modal-actions {
+    gap: 8px; /* Reduces the space between buttons */
+    justify-content: center; /* Centers the buttons on small screens */
+  }
+
+  #editMaterialModal .modal-actions .btn {
+    min-width: auto; /* Removes the 110px strict limit on mobile */
+    padding: 10px 16px; /* Slightly reduces the inner padding to fit all 3 */
+    font-size: 0.85rem; /* Shrinks the text just a tiny bit */
+    flex: 1; /* Makes the buttons stretch evenly to fill the row */
+  }
+}
