@@ -54,4 +54,33 @@ class RawMaterial(models.Model):
     def __str__(self):
         return self.material_name
     
+class ProductCategory(models.TextChoices):
+    TOPS = 'tops', 'Tops'
+    BOTTOMS = 'bottoms', 'Bottoms'
+    DRESSES = 'dresses', 'Dresses'
+    OUTERWEAR = 'outerwear', 'Outerwear'
+    SETS = 'sets', 'Sets'
+
+class ProductCollection(models.TextChoices):
+    SUMMER = 'summer', 'Summer'
+    RESORT = 'resort', 'Resort'
+    HOLIDAY = 'holiday', 'Holiday'
+    SPRING = 'spring', 'Spring'
+    FALL = 'fall', 'Fall'
+
+class Product(models.Model):
+    product_id = models.CharField(max_length=10, unique=True, editable=False)
+    product_name = models.CharField(max_length=100)
+    product_category = models.CharField(max_length=20, choices=ProductCategory.choices)
+    product_collection = models.CharField(max_length=20, choices=ProductCollection.choices)
+
+    def save(self, *args, **kwargs):
+        if not self.product_id:
+            last = Product.objects.order_by('-id').first()
+            next_num = (last.id + 1) if last else 1
+            self.product_id = f'#{next_num:05d}'
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f"{self.product_id} – {self.product_name}"
 

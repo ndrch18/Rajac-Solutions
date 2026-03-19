@@ -285,3 +285,63 @@ def delete_raw_material(request, pk):
         url = f"{url}?{urlencode(params)}"
 
     return redirect(url)
+# -------------------------------------------------------
+# Owner – Products sub-dashboard
+# -------------------------------------------------------
+def owner_products(request):
+    if not request.session.get('account_id'):
+        return redirect('login')
+    employee_id = request.session.get('employee_id', '')
+    if not employee_id.startswith('0'):
+        return redirect('login')
+    return render(request, 'system_app/owner_products.html')
+
+
+# -------------------------------------------------------
+# Owner – Add product form
+# -------------------------------------------------------
+from .forms import ProductForm
+from .models import Product
+
+def owner_add_product(request):
+    if not request.session.get('account_id'):
+        return redirect('login')
+    employee_id = request.session.get('employee_id', '')
+    if not employee_id.startswith('0'):
+        return redirect('login')
+
+    # Auto-generate the NEXT product ID for display
+    last = Product.objects.order_by('-id').first()
+    next_num = (last.id + 1) if last else 1
+    next_product_id = f'#{next_num:05d}'
+
+    message = ''
+    form = ProductForm()
+
+    if request.method == 'POST':
+        form = ProductForm(request.POST)
+        if form.is_valid():
+            form.save()
+            return redirect('owner_products')
+        else:
+            message = 'Please fix the errors below.'
+
+    return render(request, 'system_app/owner_add_product.html', {
+        'form': form,
+        'next_product_id': next_product_id,
+        'message': message,
+    })
+
+
+# -------------------------------------------------------
+# Owner – Products list
+# -------------------------------------------------------
+def owner_products_list(request):
+    if not request.session.get('account_id'):
+        return redirect('login')
+    employee_id = request.session.get('employee_id', '')
+    if not employee_id.startswith('0'):
+        return redirect('login')
+
+    products = Product.objects.all().order_by('-id')
+    return render(request, 'system_app/owner_products_list.html', {'products': products})

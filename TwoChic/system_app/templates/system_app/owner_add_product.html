@@ -1,0 +1,97 @@
+{% extends 'system_app/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container" style="max-width: 480px;">
+
+    <!-- Page title row -->
+    <div class="d-flex align-items-center mb-4 mt-2">
+        <a href="{% url 'owner_products' %}" class="btn btn-link p-0 text-dark me-3">
+            <span class="material-icons">arrow_back</span>
+        </a>
+        <h6 class="mb-0 fw-500">Product Card Form</h6>
+    </div>
+
+    <form method="POST" novalidate>
+        {% csrf_token %}
+
+        <!-- Product Name -->
+        <div class="mb-3">
+            <label class="form-label fw-semibold" style="font-size:13px;">Product Name:</label>
+            <input type="text" name="product_name" class="form-control custom-input"
+                   placeholder="Enter Product Name"
+                   value="{{ form.product_name.value|default:'' }}">
+            {% if form.product_name.errors %}
+                <div class="text-danger" style="font-size:12px; margin-top:4px;">{{ form.product_name.errors.0 }}</div>
+            {% endif %}
+        </div>
+
+        <!-- Product ID (read-only, auto-generated) -->
+        <div class="mb-3">
+            <label class="form-label fw-semibold" style="font-size:13px;">Product ID:</label>
+            <input type="text" class="form-control custom-input"
+                   value="{{ next_product_id }}" readonly
+                   style="color:#888; cursor:not-allowed;">
+        </div>
+
+        <!-- Category -->
+        <div class="mb-3">
+            <label class="form-label fw-semibold" style="font-size:13px;">Category:</label>
+            <select name="product_category" class="form-select custom-input">
+                <option value="">Select Category</option>
+                {% for value, label in form.fields.product_category.choices %}
+                    {% if value %}
+                        <option value="{{ value }}"
+                            {% if form.product_category.value == value %}selected{% endif %}>
+                            {{ label }}
+                        </option>
+                    {% endif %}
+                {% endfor %}
+            </select>
+            {% if form.product_category.errors %}
+                <div class="text-danger" style="font-size:12px; margin-top:4px;">{{ form.product_category.errors.0 }}</div>
+            {% endif %}
+        </div>
+
+        <!-- Collection -->
+        <div class="mb-4">
+            <label class="form-label fw-semibold" style="font-size:13px;">Collection:</label>
+            <select name="product_collection" class="form-select custom-input">
+                <option value="">Select Collection</option>
+                {% for value, label in form.fields.product_collection.choices %}
+                    {% if value %}
+                        <option value="{{ value }}"
+                            {% if form.product_collection.value == value %}selected{% endif %}>
+                            {{ label }}
+                        </option>
+                    {% endif %}
+                {% endfor %}
+            </select>
+            {% if form.product_collection.errors %}
+                <div class="text-danger" style="font-size:12px; margin-top:4px;">{{ form.product_collection.errors.0 }}</div>
+            {% endif %}
+        </div>
+
+        {% if message %}
+            <div class="alert alert-danger text-center" style="font-size:13px;">{{ message }}</div>
+        {% endif %}
+
+        <!-- Action buttons -->
+        <div class="d-flex justify-content-end gap-3 mt-2 mb-4">
+            <a href="{% url 'owner_products' %}" class="cancel-btn"
+               style="padding:12px 28px; border-radius:10px; border:none;
+                      background:#b8babb; color:#000; font-weight:600;
+                      font-size:0.95rem; text-decoration:none; display:inline-block;">
+                Cancel
+            </a>
+            <button type="submit"
+                    style="padding:12px 28px; border-radius:10px; border:none;
+                           background:#92d193; color:#000; font-weight:600;
+                           font-size:0.95rem; cursor:pointer;">
+                Add
+            </button>
+        </div>
+
+    </form>
+</div>
+{% endblock %}

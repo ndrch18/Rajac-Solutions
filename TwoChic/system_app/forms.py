@@ -39,3 +39,24 @@ class RawMaterialForm(forms.ModelForm):
             self.fields["material_unit"].queryset = MaterialUnit.objects.filter(
                 category=self.instance.material_category
             ).order_by("unit_name")
+from .models import Product, ProductCategory, ProductCollection
+
+class ProductForm(forms.ModelForm):
+    class Meta:
+        model = Product
+        fields = ['product_name', 'product_category', 'product_collection']
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['product_name'].widget.attrs.update({
+            'class': 'form-control custom-input',
+            'placeholder': 'Enter Product Name',
+        })
+        self.fields['product_category'].choices = [('', 'Select Category')] + list(ProductCategory.choices)
+        self.fields['product_category'].widget.attrs.update({
+            'class': 'form-select custom-input',
+        })
+        self.fields['product_collection'].choices = [('', 'Select Collection')] + list(ProductCollection.choices)
+        self.fields['product_collection'].widget.attrs.update({
+            'class': 'form-select custom-input',
+        })
