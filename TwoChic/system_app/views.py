@@ -24,8 +24,16 @@ def login_view(request):
         try:
             account = Account.objects.get(employee_id=employee_id, password=password)
             if password == account.password:
-                request.session['account_id'] = account.id 
-                return redirect('prodman_homepage')
+                request.session['account_id'] = account.id
+                request.session['employee_id'] = account.employee_id
+
+                # Route based on the first character of the employee ID
+                if employee_id.startswith('0'):
+                    return redirect('owner_homepage')
+                elif employee_id.startswith('1'):
+                    return redirect('prodman_homepage')
+                else:
+                    message = "Unrecognized account type. Please contact your administrator."
             else:
                 message = "Invalid login. Please check your username or password."
         except Account.DoesNotExist:
@@ -66,11 +74,26 @@ def change_password_view(request):
     return render(request, "system_app/change_password.html", {"message": message})
 
 
+def owner_homepage(request):
+    if not request.session.get('account_id'):
+        return redirect('login')
+    # Enforce role: owner IDs start with '0'
+    employee_id = request.session.get('employee_id', '')
+    if not employee_id.startswith('0'):
+        return redirect('login')
+    return render(request, 'system_app/owner_home.html', {
+        'employee_id': employee_id,
+    })
+
 def prodman_homepage(request):
     if not request.session.get('account_id'):
         return redirect('login')
-
-    return render(request, 'system_app/prodman_home.html')
+    employee_id = request.session.get('employee_id', '')
+    if not employee_id.startswith('1'):
+        return redirect('login')
+    return render(request, 'system_app/prodman_home.html', {
+        'employee_id': employee_id,
+    })
 
 def prodman_matinv(request):
     # Protect page
