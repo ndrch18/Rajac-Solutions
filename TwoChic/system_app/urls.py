@@ -18,4 +18,8 @@ urlpatterns = [
     path('prodman_matinv/', views.prodman_matinv, name='prodman_matinv'),
     path('prodman/matinv/<int:pk>/edit/', views.edit_raw_material, name='edit_raw_material'),
     path('prodman/matinv/<int:pk>/delete/', views.delete_raw_material, name='delete_raw_material'),
+
+    path('prod/', views.prod_homepage, name='prod_homepage'),
+    path('prod/matinv/', views.prod_matinv, name='prod_matinv'),
+    path('prod/matinv/', views.prod_matinv, name='prod_matinv'),
 ]

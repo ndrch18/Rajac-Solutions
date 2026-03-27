@@ -1,0 +1,135 @@
+{% extends 'system_app/base.html' %}
+{% load static %}
+
+{% block content %}
+
+<div class="container-fluid px-3">
+
+  <!-- Search + Filter -->
+  <div class="d-flex align-items-center gap-2 mt-2">
+    <form class="flex-grow-1" method="get" action="">
+      <input type="hidden" name="category" value="{{ selected_category }}"/>
+
+      <div class="input-group inventory-search shadow-sm">
+        <span class="input-group-text bg-white border-0 ps-3">
+          <span class="material-icons text-muted">search</span>
+        </span>
+        <input
+          type="text"
+          class="form-control border-0"
+          name="q"
+          value="{{ q }}"
+          placeholder="Search for Material"
+        />
+      </div>
+    </form>
+
+   <div class="dropdown">
+    <button class="btn btn-light shadow-sm dropdown-toggle"
+            type="button"
+            data-toggle="dropdown"
+            aria-expanded="false">
+
+        <span class="material-icons">tune</span>
+    </button>
+
+    <ul class="dropdown-menu dropdown-menu-left filter-button">
+
+        <li>
+            <a class="dropdown-item"
+               href="?category={{ selected_category }}&q={{ q }}&sort=alpha">
+                Alphabetical (A–Z)
+            </a>
+        </li>
+
+        <li>
+            <a class="dropdown-item"
+               href="?category={{ selected_category }}&q={{ q }}&sort=alpha_desc">
+                Alphabetical (Z–A)
+            </a>
+        </li>
+
+        <li><hr class="dropdown-divider"></li>
+
+        <li>
+            <a class="dropdown-item"
+               href="?category={{ selected_category }}&q={{ q }}&sort=highest">
+                Highest Quantity
+            </a>
+        </li>
+
+        <li>
+            <a class="dropdown-item"
+               href="?category={{ selected_category }}&q={{ q }}&sort=lowest">
+                Lowest Quantity
+            </a>
+        </li>
+
+    </ul>
+  </div>
+  </div>
+
+  <!-- Inventory Timestamp -->
+  <div class="text-center mt-4 mb-3">
+    <div class="inventory-asof">
+      Inventory as of {{ as_of|date:"n/j/y H:i:s" }}
+    </div>
+  </div>
+
+  <!-- Buttons -->
+  <div class="d-flex flex-column align-items-center gap-3 mb-4">
+
+  <!-- Category Panel -->
+  <div class="category-panel shadow-sm">
+
+    <div class="category-title">Select Category</div>
+
+    <form method="get" action="">
+      <input type="hidden" name="q" value="{{ q }}"/>
+
+      <div class="category-select-wrap">
+        <select class="form-select category-select"
+                name="category"
+                onchange="this.form.submit()">
+
+          {% for val, label in category_choices %}
+            <option value="{{ val }}"
+              {% if selected_category == val %}selected{% endif %}>
+              {{ label }}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+    </form>
+
+    <!-- Inventory Table -->
+    <div class="table-responsive mt-3">
+      <table class="table inventory-table mb-0">
+        <thead>
+          <tr>
+            <th>Material</th>
+            <th class="text-center">Qty.</th>
+            <th class="text-center">Unit Price</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for m in materials %}
+            <tr>
+              <td>{{ m.material_name }}</td>
+              <td class="text-center">{{ m.material_quantity }}</td>
+              <td class="text-center">₱{{ m.material_unitprice|floatformat:0 }}</td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="5" class="text-center py-4 text-muted">
+                No materials found.
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
