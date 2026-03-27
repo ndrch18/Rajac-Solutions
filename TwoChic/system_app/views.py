@@ -2,8 +2,9 @@ from django.shortcuts import render, redirect
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from system_app.models import Account, RawMaterial
-from .forms import RawMaterialForm
-from .models import MaterialUnit
+from .forms import RawMaterialForm, AddEmployeeForm, EditEmployeeNameForm
+from .models import MaterialUnit, Employee, EmployeeRole
+import random
 
 import json
 from django.core.serializers.json import DjangoJSONEncoder
@@ -30,7 +31,7 @@ def login_view(request):
                 # Route based on the first character of the employee ID
                 if employee_id.startswith('0'):
                     return redirect('owner_homepage')
-                elif employee_id.startswith('1'):
+                elif employee_id.startswith('1') or employee_id.startswith('2'):
                     return redirect('prodman_homepage')
                 elif employee_id.startswith('2'):
                     return redirect('prod_homepage')
@@ -377,6 +378,94 @@ def delete_raw_material(request, pk):
         url = f"{url}?{urlencode(params)}"
 
     return redirect(url)
+def _generate_employee_id(role):
+    """Generate a unique 4-digit employee ID based on role."""
+    prefix = '1' if role == 'production_manager' else '2'
+    existing_ids = set(Employee.objects.values_list('employee_id', flat=True))
+    for _ in range(1000):
+        suffix = str(random.randint(0, 999)).zfill(3)
+        candidate = prefix + suffix
+        if candidate not in existing_ids:
+            return candidate
+    raise ValueError("Could not generate a unique employee ID.")
+
+
+def owner_manage_employees(request):
+    if not request.session.get('account_id'):
+        return redirect('login')
+    employee_id = request.session.get('employee_id', '')
+    if not employee_id.startswith('0'):
+        return redirect('login')
+
+    message = ''
+    message_type = 'success'
+    add_form = AddEmployeeForm()
+    edit_form = None
+    edit_target = None
+
+    # ---- Handle Add Employee POST ----
+    if request.method == 'POST' and 'action' in request.POST:
+        action = request.POST.get('action')
+
+        if action == 'add':
+            add_form = AddEmployeeForm(request.POST)
+            if add_form.is_valid():
+                name = add_form.cleaned_data['employee_name']
+                role = add_form.cleaned_data['employee_role']
+                try:
+                    new_id = _generate_employee_id(role)
+                    Employee.objects.create(
+                        employee_id=new_id,
+                        employee_name=name,
+                        employee_role=role,
+                    )
+                    # Also create an Account entry so they can log in
+                    Account.objects.create(
+                        employee_id=new_id,
+                        password=new_id,  # default password = their ID
+                    )
+                    message = f"Employee added successfully! ID: {new_id} | Default password: {new_id}"
+                    message_type = 'success'
+                    add_form = AddEmployeeForm()
+                except Exception as e:
+                    message = f"Error adding employee: {e}"
+                    message_type = 'danger'
+
+        elif action == 'edit':
+            edit_id = request.POST.get('edit_id')
+            emp = get_object_or_404(Employee, pk=edit_id)
+            edit_form = EditEmployeeNameForm(request.POST, instance=emp)
+            if edit_form.is_valid():
+                edit_form.save()
+                message = "Employee name updated successfully."
+                message_type = 'success'
+            else:
+                edit_target = emp
+                message = "Please fix the errors below."
+                message_type = 'danger'
+
+    # ---- Open edit modal via GET ----
+    edit_id_get = request.GET.get('edit')
+    if edit_id_get and not edit_target:
+        try:
+            edit_target = Employee.objects.get(pk=int(edit_id_get))
+            edit_form = EditEmployeeNameForm(instance=edit_target)
+        except (Employee.DoesNotExist, ValueError):
+            edit_target = None
+
+    employees = Employee.objects.all().order_by('employee_id')
+
+    return render(request, 'system_app/owner_manage_employees.html', {
+        'employees': employees,
+        'add_form': add_form,
+        'edit_form': edit_form,
+        'edit_target': edit_target,
+        'open_edit': bool(edit_target),
+        'message': message,
+        'message_type': message_type,
+    })
+
+
 # -------------------------------------------------------
 # Owner – Products sub-dashboard
 # -------------------------------------------------------

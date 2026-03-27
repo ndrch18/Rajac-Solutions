@@ -60,3 +60,32 @@ class ProductForm(forms.ModelForm):
         self.fields['product_collection'].widget.attrs.update({
             'class': 'form-select custom-input',
         })
+
+from .models import Employee, EmployeeRole
+
+class AddEmployeeForm(forms.Form):
+    employee_name = forms.CharField(
+        max_length=100,
+        widget=forms.TextInput(attrs={
+            'class': 'form-control custom-input',
+            'placeholder': 'Enter Employee Name',
+        })
+    )
+    employee_role = forms.ChoiceField(
+        choices=[('', 'Select Role')] + list(EmployeeRole.choices),
+        widget=forms.Select(attrs={
+            'class': 'form-select custom-input',
+        })
+    )
+
+class EditEmployeeNameForm(forms.ModelForm):
+    class Meta:
+        model = Employee
+        fields = ['employee_name']
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['employee_name'].widget.attrs.update({
+            'class': 'form-control custom-input',
+            'placeholder': 'Enter Employee Name',
+        })

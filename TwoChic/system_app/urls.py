@@ -10,6 +10,7 @@ urlpatterns = [
     path('change-password/', views.change_password_view, name='change_password'),
 
     path('owner/', views.owner_homepage, name='owner_homepage'),
+    path('owner/employees/', views.owner_manage_employees, name='owner_manage_employees'),
     path('owner/products/', views.owner_products, name='owner_products'),
     path('owner/products/add/', views.owner_add_product, name='owner_add_product'),
     path('owner/products/list/', views.owner_products_list, name='owner_products_list'),
