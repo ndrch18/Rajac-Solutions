@@ -54,6 +54,21 @@ class RawMaterial(models.Model):
     def __str__(self):
         return self.material_name
     
+class EmployeeRole(models.TextChoices):
+    PRODUCTION_MANAGER = 'production_manager', 'Production Manager'
+    PRODUCTION_EMPLOYEE = 'production_employee', 'Production Employee'
+
+class Employee(models.Model):
+    employee_id = models.CharField(max_length=10, unique=True, editable=False)
+    employee_name = models.CharField(max_length=100)
+    employee_role = models.CharField(
+        max_length=30,
+        choices=EmployeeRole.choices,
+    )
+
+    def __str__(self):
+        return f"{self.employee_id} – {self.employee_name}"
+
 class ProductCategory(models.TextChoices):
     TOPS = 'tops', 'Tops'
     BOTTOMS = 'bottoms', 'Bottoms'
