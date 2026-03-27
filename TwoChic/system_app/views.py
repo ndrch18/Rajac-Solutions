@@ -32,6 +32,8 @@ def login_view(request):
                     return redirect('owner_homepage')
                 elif employee_id.startswith('1'):
                     return redirect('prodman_homepage')
+                elif employee_id.startswith('2'):
+                    return redirect('prod_homepage')
                 else:
                     message = "Unrecognized account type. Please contact your administrator."
             else:
@@ -92,6 +94,16 @@ def prodman_homepage(request):
     if not employee_id.startswith('1'):
         return redirect('login')
     return render(request, 'system_app/prodman_home.html', {
+        'employee_id': employee_id,
+    })
+
+def prod_homepage(request):
+    if not request.session.get('account_id'):
+        return redirect('login')
+    employee_id = request.session.get('employee_id', '')
+    if not employee_id.startswith('2'):
+        return redirect('login')
+    return render(request, 'system_app/prod_home.html', {
         'employee_id': employee_id,
     })
 
@@ -213,7 +225,87 @@ def prodman_matinv(request):
     }
 
     return render(request, "system_app/prodman_matinv.html", context)
-    
+
+
+def prod_matinv(request):
+    # Protect page
+    if not request.session.get('account_id'):
+        return redirect('login')
+
+    employee_id = request.session.get('employee_id', '')
+    if not employee_id.startswith('2'):
+        return redirect('login')
+
+    # GET FILTERS
+    q = (request.GET.get('q') or "").strip()
+    category = (request.GET.get('category') or "all").strip()
+    sort = (request.GET.get('sort') or "alpha").strip()
+
+    qs = RawMaterial.objects.all()
+
+    if category in {"fabrics", "trims", "accessories"}:
+        qs = qs.filter(material_category=category)
+
+    if q:
+        qs = qs.filter(material_name__icontains=q)
+
+    if sort == "highest":
+        qs = qs.order_by("-material_quantity", "material_name")
+    elif sort == "lowest":
+        qs = qs.order_by("material_quantity", "material_name")
+    elif sort == "alpha_desc":
+        qs = qs.order_by("-material_name")
+    else:
+        qs = qs.order_by("material_name")
+
+    units_by_category = {
+        "fabrics": [
+            {"id": u.id, "name": u.unit_name}
+            for u in MaterialUnit.objects.filter(category="fabrics").order_by("unit_name")
+        ],
+        "trims": [
+            {"id": u.id, "name": u.unit_name}
+            for u in MaterialUnit.objects.filter(category="trims").order_by("unit_name")
+        ],
+        "accessories": [
+            {"id": u.id, "name": u.unit_name}
+            for u in MaterialUnit.objects.filter(category="accessories").order_by("unit_name")
+        ],
+    }
+
+    edit_id = request.GET.get("edit")
+    edit_target = None
+    edit_form = None
+
+    if edit_id:
+        try:
+            edit_target = RawMaterial.objects.get(pk=int(edit_id))
+            edit_form = RawMaterialForm(instance=edit_target)
+        except (RawMaterial.DoesNotExist, ValueError):
+            edit_target = None
+            edit_form = None
+
+    context = {
+        "materials": qs,
+        "selected_category": category,
+        "q": q,
+        "sort": sort,
+        "as_of": timezone.localtime(timezone.now()),
+        "category_choices": [
+            ("all", "All"),
+            ("fabrics", "Fabrics"),
+            ("trims", "Trims"),
+            ("accessories", "Accessories"),
+        ],
+        "units_by_category_json": json.dumps(units_by_category, cls=DjangoJSONEncoder),
+        "edit_target": edit_target,
+        "edit_form": edit_form,
+        "open_edit": bool(edit_target),
+    }
+
+    return render(request, "system_app/prod_matinv.html", context)
+
+
 def edit_raw_material(request, pk):
     if not request.session.get('account_id'):
         return redirect('login')
