@@ -31,7 +31,7 @@ def login_view(request):
                 # Route based on the first character of the employee ID
                 if employee_id.startswith('0'):
                     return redirect('owner_homepage')
-                elif employee_id.startswith('1') or employee_id.startswith('2'):
+                elif employee_id.startswith('1'):
                     return redirect('prodman_homepage')
                 elif employee_id.startswith('2'):
                     return redirect('prod_homepage')
