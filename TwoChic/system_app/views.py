@@ -28,6 +28,13 @@ def login_view(request):
                 request.session['account_id'] = account.id
                 request.session['employee_id'] = account.employee_id
 
+                try:
+                    from .models import Employee
+                    emp = Employee.objects.get(employee_id=employee_id)
+                    request.session['employee_name'] = emp.employee_name
+                except Employee.DoesNotExist:
+                    request.session['employee_name'] = 'Owner'
+
                 # Route based on the first character of the employee ID
                 if employee_id.startswith('0'):
                     return redirect('owner_homepage')
@@ -465,6 +472,20 @@ def owner_manage_employees(request):
         'message_type': message_type,
     })
 
+def delete_employee(request, pk):
+    if not request.session.get('account_id'):
+        return redirect('login')
+    employee_id = request.session.get('employee_id', '')
+    if not employee_id.startswith('0'):
+        return redirect('login')
+
+    emp = get_object_or_404(Employee, pk=pk)
+
+    if request.method == 'POST':
+        Account.objects.filter(employee_id=emp.employee_id).delete()
+        emp.delete()
+
+    return redirect('owner_manage_employees')
 
 # -------------------------------------------------------
 # Owner – Products sub-dashboard

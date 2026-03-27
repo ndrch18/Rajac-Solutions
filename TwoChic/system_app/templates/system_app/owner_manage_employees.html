@@ -49,10 +49,17 @@
                             </td>
                             <td class="text-center pe-3">
                                 <a href="?edit={{ emp.pk }}"
-                                   class="btn btn-sm btn-outline-secondary"
+                                   class="btn btn-sm btn-outline-secondary me-1"
                                    title="Edit name">
                                     <span class="material-icons align-middle" style="font-size:16px;">edit</span>
                                 </a>
+                                <button type="button"
+                                        class="btn btn-sm btn-outline-danger"
+                                        title="Delete employee"
+                                        data-bs-toggle="modal"
+                                        data-bs-target="#deleteModal{{ emp.pk }}">
+                                    <span class="material-icons align-middle" style="font-size:16px;">delete</span>
+                                </button>
                             </td>
                         </tr>
                         {% empty %}
@@ -68,6 +75,36 @@
         </div>
     </div>
 </div>
+
+<!-- ===================== DELETE CONFIRMATION MODALS ===================== -->
+{% for emp in employees %}
+<div class="modal fade" id="deleteModal{{ emp.pk }}" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+        <div class="modal-content">
+            <div class="modal-header border-0 pb-0">
+                <h6 class="modal-title fw-semibold text-danger">
+                    <span class="material-icons align-middle me-1" style="font-size:18px;">warning</span>
+                    Delete Employee
+                </h6>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body pt-2">
+                <p class="mb-1">Are you sure you want to delete:</p>
+                <p class="fw-semibold mb-0" style="color:#5a9ea8;">{{ emp.employee_name }}</p>
+                <p class="text-muted small">ID: {{ emp.employee_id }}</p>
+                <p class="text-danger small mb-0">This will also remove their login account.</p>
+            </div>
+            <div class="modal-footer border-0 pt-0">
+                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+                <form method="post" action="{% url 'delete_employee' emp.pk %}">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endfor %}
 
 <!-- ===================== ADD EMPLOYEE MODAL ===================== -->
 <div class="modal fade" id="addEmployeeModal" tabindex="-1" aria-labelledby="addEmployeeModalLabel" aria-hidden="true">
@@ -173,14 +210,5 @@
         </div>
     </div>
 </div>
-
-<script>
-  document.addEventListener('DOMContentLoaded', function () {
-    {% if open_edit %}
-    var editModal = new bootstrap.Modal(document.getElementById('editEmployeeModal'));
-    editModal.show();
-    {% endif %}
-  });
-</script>
 
 {% endblock %}
