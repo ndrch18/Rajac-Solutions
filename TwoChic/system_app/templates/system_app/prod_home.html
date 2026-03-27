@@ -1,0 +1,60 @@
+{% extends 'system_app/base.html' %}
+{% load static %}
+
+{% block title %}Production Employee Home{% endblock %}
+
+{% block content %}
+<div class="container text-center mt-4">
+    <h5 class="mb-4">Production Employee Dashboard</h5>
+
+    <div class="row justify-content-center">
+
+        <!-- PRODUCTS -->
+        <div class="col-6 col-md-4 mb-4">
+            <a href="#" class="dashboard-card text-dark text-decoration-none">
+                <div class="card h-100 shadow-lg">
+                    <div class="card-body d-flex flex-column justify-content-center align-items-center py-4">
+                        <div class="dashboard-icon-wrap mb-3">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="60" height="60" viewBox="0 0 64 64" fill="none">
+                                <!-- box body -->
+                                <path d="M12 26 L32 36 L52 26 L32 16 Z" fill="#F5A623"/>
+                                <path d="M12 26 L12 46 L32 56 L32 36 Z" fill="#D4831A"/>
+                                <path d="M52 26 L52 46 L32 56 L32 36 Z" fill="#F5C060"/>
+                                <!-- tape line -->
+                                <path d="M32 16 L32 36" stroke="#fff" stroke-width="2"/>
+                                <path d="M22 21 L42 31" stroke="#fff" stroke-width="2"/>
+                            </svg>
+                        </div>
+                        <span class="dashboard-label">Products</span>
+                    </div>
+                </div>
+            </a>
+        </div>
+
+        <!-- MATERIALS -->
+        <div class="col-6 col-md-4 mb-4">
+            <a href="{% url 'prod_matinv' %}" class="dashboard-card text-dark text-decoration-none">
+                <div class="card h-100 shadow-lg">
+                    <div class="card-body d-flex flex-column justify-content-center align-items-center py-4">
+                        <div class="dashboard-icon-wrap mb-3">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="60" height="60" viewBox="0 0 64 64" fill="none">
+                                <!-- clipboard board -->
+                                <rect x="10" y="14" width="44" height="42" rx="4" fill="#e8edf2" stroke="#aab5c0" stroke-width="2"/>
+                                <!-- clip top -->
+                                <rect x="22" y="10" width="20" height="8" rx="3" fill="#aab5c0"/>
+                                <!-- check lines -->
+                                <polyline points="19,28 23,32 29,26" stroke="#5a9ea8" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+                                <line x1="33" y1="29" x2="46" y2="29" stroke="#aab5c0" stroke-width="2" stroke-linecap="round"/>
+                                <polyline points="19,40 23,44 29,38" stroke="#5a9ea8" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+                                <line x1="33" y1="41" x2="46" y2="41" stroke="#aab5c0" stroke-width="2" stroke-linecap="round"/>
+                            </svg>
+                        </div>
+                        <span class="dashboard-label">Materials</span>
+                    </div>
+                </div>
+            </a>
+        </div>
+
+    </div>
+</div>
+{% endblock %}

@@ -17,35 +17,54 @@
     <nav class="navbar navbar-expand-lg shadow-sm custom-navbar fixed-top">
         <div class="container-fluid d-flex align-items-center">
             <div class="d-flex align-items-center ms-2">
-                {% if request.session.employee_id %}
-                    {% with eid=request.session.employee_id %}
-                        {% if eid|slice:":1" == "0" %}
-                            <a class="navbar-brand d-flex align-items-center text-dark text-decoration-none" href="{% url 'owner_homepage' %}">
-                                <img src="{% static 'images/logo.png' %}" alt="Logo" width="20" class="me-2">
-                            </a>
-                            <a class="d-flex flex-column lh-1 text-dark text-decoration-none" href="{% url 'owner_homepage' %}">
-                                <span class="brand-top">TWO CHIC</span>
-                                <span class="brand-bottom">MANILA</span>
-                            </a>
-                        {% else %}
-                            <a class="navbar-brand d-flex align-items-center text-dark text-decoration-none" href="{% url 'prodman_homepage' %}">
-                                <img src="{% static 'images/logo.png' %}" alt="Logo" width="20" class="me-2">
-                            </a>
-                            <a class="d-flex flex-column lh-1 text-dark text-decoration-none" href="{% url 'prodman_homepage' %}">
-                                <span class="brand-top">TWO CHIC</span>
-                                <span class="brand-bottom">MANILA</span>
-                            </a>
-                        {% endif %}
-                    {% endwith %}
-                {% else %}
-                    <a class="navbar-brand d-flex align-items-center text-dark text-decoration-none" href="{% url 'login' %}">
-                        <img src="{% static 'images/logo.png' %}" alt="Logo" width="20" class="me-2">
-                    </a>
-                    <a class="d-flex flex-column lh-1 text-dark text-decoration-none" href="{% url 'login' %}">
-                        <span class="brand-top">TWO CHIC</span>
-                        <span class="brand-bottom">MANILA</span>
-                    </a>
-                {% endif %}
+    {% if request.session.employee_id %}
+        {% with eid=request.session.employee_id %}
+            {% if eid|slice:":1" == "0" %}
+                <a class="navbar-brand d-flex align-items-center text-dark text-decoration-none" href="{% url 'owner_homepage' %}">
+                    <img src="{% static 'images/logo.png' %}" alt="Logo" width="20" class="me-2">
+                </a>
+                <a class="d-flex flex-column lh-1 text-dark text-decoration-none" href="{% url 'owner_homepage' %}">
+                    <span class="brand-top">TWO CHIC</span>
+                    <span class="brand-bottom">MANILA</span>
+                </a>
+
+            {% elif eid|slice:":1" == "1" %}
+                <a class="navbar-brand d-flex align-items-center text-dark text-decoration-none" href="{% url 'prodman_homepage' %}">
+                    <img src="{% static 'images/logo.png' %}" alt="Logo" width="20" class="me-2">
+                </a>
+                <a class="d-flex flex-column lh-1 text-dark text-decoration-none" href="{% url 'prodman_homepage' %}">
+                    <span class="brand-top">TWO CHIC</span>
+                    <span class="brand-bottom">MANILA</span>
+                </a>
+
+            {% elif eid|slice:":1" == "2" %}
+                <a class="navbar-brand d-flex align-items-center text-dark text-decoration-none" href="{% url 'prod_homepage' %}">
+                    <img src="{% static 'images/logo.png' %}" alt="Logo" width="20" class="me-2">
+                </a>
+                <a class="d-flex flex-column lh-1 text-dark text-decoration-none" href="{% url 'prod_homepage' %}">
+                    <span class="brand-top">TWO CHIC</span>
+                    <span class="brand-bottom">MANILA</span>
+                </a>
+
+            {% else %}
+                <a class="navbar-brand d-flex align-items-center text-dark text-decoration-none" href="{% url 'login' %}">
+                    <img src="{% static 'images/logo.png' %}" alt="Logo" width="20" class="me-2">
+                </a>
+                <a class="d-flex flex-column lh-1 text-dark text-decoration-none" href="{% url 'login' %}">
+                    <span class="brand-top">TWO CHIC</span>
+                    <span class="brand-bottom">MANILA</span>
+                </a>
+            {% endif %}
+        {% endwith %}
+    {% else %}
+        <a class="navbar-brand d-flex align-items-center text-dark text-decoration-none" href="{% url 'login' %}">
+            <img src="{% static 'images/logo.png' %}" alt="Logo" width="20" class="me-2">
+        </a>
+        <a class="d-flex flex-column lh-1 text-dark text-decoration-none" href="{% url 'login' %}">
+            <span class="brand-top">TWO CHIC</span>
+            <span class="brand-bottom">MANILA</span>
+        </a>
+    {% endif %}
             </div>
 
             {% if request.session.account_id %}
