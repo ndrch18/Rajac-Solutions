@@ -17,30 +17,489 @@
         <!-- IMAGE -->
         <div style="width:100%; height:180px; background:#e8edf2; border-radius:12px;
         display:flex; align-items:center; justify-content:center;" class="mb-4">
-
-            <span class="material-icons text-muted" style="font-size:60px;">
-                inventory_2
-            </span>
-
+            <span class="material-icons text-muted" style="font-size:60px;">inventory_2</span>
         </div>
 
         <!-- PRODUCT INFO -->
-
         <p><strong>Product Name:</strong> {{ product.product_name }}</p>
-
         <p><strong>Product ID:</strong> {{ product.product_id }}</p>
 
-        <p><strong>Quantity:</strong> {{ product.quantity }}</p>
+        <!-- QUANTITY with inline edit for Production Manager -->
+        <div class="mb-2">
+            <div class="d-flex align-items-center gap-2">
+                <strong>Quantity:</strong>
+                <span id="qtyDisplay">{{ product.quantity }}</span>
+                <button class="btn btn-link p-0 text-secondary" onclick="toggleQtyEdit()" title="Edit quantity">
+                    <span class="material-icons" style="font-size:16px;">edit</span>
+                </button>
+            </div>
+            <form method="POST" id="qtyForm" class="d-none mt-2">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="update_qty">
+                <div class="d-flex align-items-center gap-2">
+                    <input type="number" name="quantity" id="qtyInput" min="0" value="{{ product.quantity }}"
+                           class="form-control" style="width:100px; font-size:14px;">
+                    <button type="submit" class="btn btn-sm" style="background:#92d193; color:#000; border:none; border-radius:8px; padding:5px 14px;">Save</button>
+                    <button type="button" class="btn btn-sm" style="background:#b8babb; color:#000; border:none; border-radius:8px; padding:5px 14px;" onclick="toggleQtyEdit()">Cancel</button>
+                </div>
+            </form>
+        </div>
 
         <p><strong>Category:</strong> {{ product.get_product_category_display }}</p>
-
         <p><strong>Collection:</strong> {{ product.get_product_collection_display }}</p>
-
-        <p><strong>Description:</strong> {{ product.description }}</p>
-
         <p><strong>Price:</strong> ₱{{ product.price }}</p>
 
-        <div class="mt-4 d-flex gap-2">
-
+        <!-- LOG MATERIALS BUTTON -->
+        <div class="mt-3">
+            <button class="btn btn-sm px-3 fw-500" style="background:#C6E8ED; color:#2e7d84; border:none; border-radius:8px; padding:8px 16px;" onclick="openLogMaterials()">
+                <span class="material-icons align-middle" style="font-size:16px;">inventory</span>
+                Log Materials
+            </button>
+        </div>
+    </div>
 </div>
+
+<!-- ============================================================
+     OVERLAY
+     ============================================================ -->
+<div id="logOverlay" class="d-none" style="position:fixed; inset:0; background:rgba(0,0,0,0.4); z-index:1040;" onclick="handleOverlayClick(event)"></div>
+
+<!-- ============================================================
+     LOG MATERIALS PANEL
+     ============================================================ -->
+<div id="logPanel" class="d-none" style="position:fixed; top:50%; left:50%; transform:translate(-50%,-50%);
+     width:min(95vw,480px); max-height:85vh; background:#fff; border-radius:16px; z-index:1050;
+     box-shadow:0 8px 32px rgba(0,0,0,0.18); flex-direction:column; overflow:hidden;">
+
+    <div style="background:#C6E8ED; padding:16px 20px; display:flex; align-items:center; justify-content:space-between; border-radius:16px 16px 0 0; flex-shrink:0;">
+        <div>
+            <p class="mb-0 fw-600" style="font-size:15px; color:#1a5c63;">Log Materials</p>
+            <p class="mb-0" style="font-size:12px; color:#2e7d84;">{{ product.product_name }}</p>
+        </div>
+        <button onclick="closeLogPanel()" style="background:none; border:none; cursor:pointer;">
+            <span class="material-icons" style="color:#2e7d84;">close</span>
+        </button>
+    </div>
+
+    <div id="materialList" style="flex:1; overflow-y:auto; padding:16px 20px;">
+        <p class="text-muted text-center" id="noMaterialsMsg" style="font-size:13px;">No materials logged yet.</p>
+    </div>
+
+    <div style="padding:12px 20px; border-top:1px solid #eee; flex-shrink:0;">
+        <button onclick="openAddPanel()" class="btn btn-sm w-100 fw-500"
+                style="background:#C6E8ED; color:#2e7d84; border:none; border-radius:8px; padding:10px;">
+            <span class="material-icons align-middle" style="font-size:16px;">add</span>
+            Add New Material
+        </button>
+    </div>
+</div>
+
+<!-- ============================================================
+     ADD MATERIAL PANEL
+     ============================================================ -->
+<div id="addPanel" class="d-none" style="position:fixed; top:50%; left:50%; transform:translate(-50%,-50%);
+     width:min(95vw,440px); max-height:90vh; background:#fff; border-radius:16px; z-index:1060;
+     box-shadow:0 12px 40px rgba(0,0,0,0.22); overflow-y:auto;">
+
+    <div style="background:#C6E8ED; padding:16px 20px; border-radius:16px 16px 0 0; display:flex; align-items:center; justify-content:space-between; position:sticky; top:0; z-index:1;">
+        <p class="mb-0 fw-600" style="font-size:15px; color:#1a5c63;">Add New Material</p>
+        <button onclick="closeAddPanel()" style="background:none; border:none; cursor:pointer;">
+            <span class="material-icons" style="color:#2e7d84;">close</span>
+        </button>
+    </div>
+
+    <div style="padding:20px;">
+
+        <!-- Category -->
+        <div class="mb-3">
+            <label style="font-size:12px; color:#555; font-weight:600; margin-bottom:4px; display:block;">Category</label>
+            <select id="addCategory" class="custom-input" style="font-size:13px;" onchange="onCategoryChange()">
+                <option value="">— All Categories —</option>
+                <option value="fabrics">Fabrics</option>
+                <option value="trims">Trims</option>
+                <option value="accessories">Accessories</option>
+            </select>
+        </div>
+
+        <!-- Material Name -->
+        <div class="mb-3">
+            <label style="font-size:12px; color:#555; font-weight:600; margin-bottom:4px; display:block;">Material Name</label>
+            <select id="addMaterialName" class="custom-input" style="font-size:13px;" onchange="onMaterialSelect()">
+                <option value="">— Select Material —</option>
+            </select>
+        </div>
+
+        <!-- Quantity Inputs (shown after selecting material) -->
+        <div id="addQtyArea" class="d-none">
+            <div id="addFabricInputs" class="d-none">
+                <div class="mb-2">
+                    <label id="addLengthLabel" style="font-size:12px; color:#555; font-weight:600; margin-bottom:4px; display:block;">Length</label>
+                    <input type="number" id="addFabricLength" min="0" step="any" placeholder="e.g. 1.5" class="custom-input" style="font-size:13px;"
+                           oninput="sanitizeNumber(this); computeAddFabricQty()">
+                </div>
+                <div class="mb-2">
+                    <label id="addWidthLabel" style="font-size:12px; color:#555; font-weight:600; margin-bottom:4px; display:block;">Width</label>
+                    <input type="number" id="addFabricWidth" min="0" step="any" placeholder="e.g. 0.8" class="custom-input" style="font-size:13px;"
+                           oninput="sanitizeNumber(this); computeAddFabricQty()">
+                </div>
+                <p id="addFabricPreview" style="font-size:12px; color:#777;"></p>
+            </div>
+            <div id="addSingleInput" class="d-none">
+                <label id="addSingleLabel" style="font-size:12px; color:#555; font-weight:600; margin-bottom:4px; display:block;">Quantity</label>
+                <input type="number" id="addSingleQty" min="0" step="any" placeholder="e.g. 2" class="custom-input" style="font-size:13px;"
+                       oninput="sanitizeNumber(this)">
+            </div>
+        </div>
+
+        <p id="addError" style="font-size:12px; color:#d9534f; display:none; margin-top:8px;"></p>
+
+        <div class="d-flex gap-2 mt-3">
+            <button onclick="closeAddPanel()" style="flex:1; padding:10px; border-radius:8px; border:none; background:#b8babb; font-weight:600; cursor:pointer; font-size:13px;">Cancel</button>
+            <button onclick="submitAdd()" style="flex:1; padding:10px; border-radius:8px; border:none; background:#92d193; font-weight:600; cursor:pointer; font-size:13px;">Add</button>
+        </div>
+    </div>
+</div>
+
+<!-- ============================================================
+     EDIT MATERIAL PANEL
+     ============================================================ -->
+<div id="editPanel" class="d-none" style="position:fixed; top:50%; left:50%; transform:translate(-50%,-50%);
+     width:min(95vw,440px); max-height:90vh; background:#fff; border-radius:16px; z-index:1060;
+     box-shadow:0 12px 40px rgba(0,0,0,0.22); overflow-y:auto;">
+
+    <div style="background:#C6E8ED; padding:16px 20px; border-radius:16px 16px 0 0; display:flex; align-items:center; justify-content:space-between; position:sticky; top:0; z-index:1;">
+        <div>
+            <p class="mb-0 fw-600" style="font-size:15px; color:#1a5c63;">Edit Material</p>
+            <p class="mb-0" id="editTitle" style="font-size:12px; color:#2e7d84;"></p>
+        </div>
+        <button onclick="closeEditPanel()" style="background:none; border:none; cursor:pointer;">
+            <span class="material-icons" style="color:#2e7d84;">close</span>
+        </button>
+    </div>
+
+    <div style="padding:20px;">
+        <input type="hidden" id="editPmId">
+        <input type="hidden" id="editCat">
+        <input type="hidden" id="editUnitVal">
+
+        <div id="editFabricInputs" class="d-none">
+            <div class="mb-2">
+                <label id="editLengthLabel" style="font-size:12px; color:#555; font-weight:600; margin-bottom:4px; display:block;">Length</label>
+                <input type="number" id="editFabricLength" min="0" step="any" class="custom-input" style="font-size:13px;"
+                       oninput="sanitizeNumber(this); computeEditFabricQty()">
+            </div>
+            <div class="mb-2">
+                <label id="editWidthLabel" style="font-size:12px; color:#555; font-weight:600; margin-bottom:4px; display:block;">Width</label>
+                <input type="number" id="editFabricWidth" min="0" step="any" class="custom-input" style="font-size:13px;"
+                       oninput="sanitizeNumber(this); computeEditFabricQty()">
+            </div>
+            <p id="editFabricPreview" style="font-size:12px; color:#777;"></p>
+        </div>
+
+        <div id="editSingleInput" class="d-none">
+            <label id="editSingleLabel" style="font-size:12px; color:#555; font-weight:600; margin-bottom:4px; display:block;">Quantity</label>
+            <input type="number" id="editSingleQty" min="0" step="any" class="custom-input" style="font-size:13px;"
+                   oninput="sanitizeNumber(this)">
+        </div>
+
+        <p id="editError" style="font-size:12px; color:#d9534f; display:none; margin-top:8px;"></p>
+
+        <div class="d-flex gap-2 mt-3">
+            <button onclick="closeEditPanel()" style="flex:1; padding:10px; border-radius:8px; border:none; background:#b8babb; font-weight:600; cursor:pointer; font-size:13px;">Cancel</button>
+            <button onclick="deleteMaterial()" style="flex:1; padding:10px; border-radius:8px; border:none; background:#eaa2a1; font-weight:600; cursor:pointer; font-size:13px;">Delete</button>
+            <button onclick="saveEdit()" style="flex:1; padding:10px; border-radius:8px; border:none; background:#92d193; font-weight:600; cursor:pointer; font-size:13px;">Save</button>
+        </div>
+    </div>
+</div>
+
+<script>
+const PRODUCT_ID = {{ product.id }};
+const API_MATERIALS = `/api/products/${PRODUCT_ID}/materials/`;
+let ALL_RAW = {{ raw_materials_json|safe }};
+let loggedMats = [];
+let selMat = null;
+
+function getCsrf() {
+    const el = document.querySelector('[name=csrfmiddlewaretoken]');
+    if (el) return el.value;
+    const m = document.cookie.match(/csrftoken=([^;]+)/);
+    return m ? m[1] : '';
+}
+
+// ── Qty Edit ──────────────────────────────────────────────────────
+function toggleQtyEdit() {
+    const f = document.getElementById('qtyForm');
+    f.classList.toggle('d-none');
+}
+
+// ── Overlay ───────────────────────────────────────────────────────
+function handleOverlayClick(e) {
+    if (e.target === document.getElementById('logOverlay')) closeLogPanel();
+}
+
+// ── Log Panel ─────────────────────────────────────────────────────
+function openLogMaterials() {
+    document.getElementById('logOverlay').classList.remove('d-none');
+    const p = document.getElementById('logPanel');
+    p.classList.remove('d-none');
+    p.style.display = 'flex';
+    loadMats();
+}
+
+function closeLogPanel() {
+    document.getElementById('logOverlay').classList.add('d-none');
+    document.getElementById('logPanel').style.display = '';
+    document.getElementById('logPanel').classList.add('d-none');
+    closeAddPanel();
+    closeEditPanel();
+}
+
+async function loadMats() {
+    const r = await fetch(API_MATERIALS);
+    const d = await r.json();
+    loggedMats = d.materials || [];
+    renderMats();
+}
+
+function renderMats() {
+    const list = document.getElementById('materialList');
+    list.innerHTML = '';
+    if (loggedMats.length === 0) {
+        list.innerHTML = '<p class="text-muted text-center" style="font-size:13px;">No materials logged yet.</p>';
+        return;
+    }
+    loggedMats.forEach(pm => {
+        let qStr = pm.category === 'fabrics' && pm.fabric_length != null
+            ? `${pm.fabric_length} × ${pm.fabric_width} ${pm.unit}`
+            : `${pm.quantity_per_garment} ${pm.unit}`;
+        const div = document.createElement('div');
+        div.style.cssText = 'background:#f4f7fa;border-radius:10px;padding:10px 12px;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;';
+        div.innerHTML = `<div>
+            <p class="mb-0 fw-600" style="font-size:13px;">${pm.material_name}</p>
+            <p class="mb-0 text-muted" style="font-size:11px;">${cap(pm.category)} · ${qStr} per garment</p>
+        </div>
+        <button onclick="openEdit(${pm.id})" style="background:none;border:none;cursor:pointer;color:#888;">
+            <span class="material-icons" style="font-size:18px;">edit</span>
+        </button>`;
+        list.appendChild(div);
+    });
+}
+
+function cap(s) { return s ? s.charAt(0).toUpperCase()+s.slice(1) : s; }
+
+// ── Add Panel ─────────────────────────────────────────────────────
+function openAddPanel() {
+    resetAdd();
+    populateDrop('', '');
+    document.getElementById('addPanel').classList.remove('d-none');
+}
+
+function closeAddPanel() {
+    document.getElementById('addPanel').classList.add('d-none');
+    resetAdd();
+}
+
+function resetAdd() {
+    ['materialSearch','addCategory','addMaterialName','addFabricLength','addFabricWidth','addSingleQty'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.value = '';
+    });
+    document.getElementById('addCategory').value = '';
+    document.getElementById('addMaterialName').innerHTML = '<option value="">— Select Material —</option>';
+    document.getElementById('addQtyArea').classList.add('d-none');
+    document.getElementById('addFabricInputs').classList.add('d-none');
+    document.getElementById('addSingleInput').classList.add('d-none');
+    document.getElementById('addFabricPreview').textContent = '';
+    document.getElementById('addError').style.display = 'none';
+    selMat = null;
+}
+
+function filterMaterials() {
+    const s = document.getElementById('materialSearch').value.toLowerCase();
+    const cat = document.getElementById('addCategory').value;
+    populateDrop(cat, s);
+}
+
+function onCategoryChange() {
+    const cat = document.getElementById('addCategory').value;
+    const s = document.getElementById('materialSearch').value.toLowerCase();
+    populateDrop(cat, s);
+    document.getElementById('addQtyArea').classList.add('d-none');
+    selMat = null;
+}
+
+function populateDrop(cat, search) {
+    const loggedIds = new Set(loggedMats.map(m => m.raw_material_id));
+    const filtered = ALL_RAW.filter(rm => {
+        if (loggedIds.has(rm.id)) return false;
+        if (cat && rm.category !== cat) return false;
+        if (search && !rm.name.toLowerCase().includes(search)) return false;
+        return true;
+    });
+    const sel = document.getElementById('addMaterialName');
+    sel.innerHTML = '<option value="">— Select Material —</option>';
+    filtered.forEach(rm => {
+        const opt = document.createElement('option');
+        opt.value = rm.id;
+        opt.textContent = `${rm.name} (${rm.unit}) — stock: ${rm.quantity}`;
+        sel.appendChild(opt);
+    });
+    document.getElementById('addQtyArea').classList.add('d-none');
+    selMat = null;
+}
+
+function onMaterialSelect() {
+    const id = parseInt(document.getElementById('addMaterialName').value);
+    if (!id) { document.getElementById('addQtyArea').classList.add('d-none'); selMat=null; return; }
+    selMat = ALL_RAW.find(r => r.id === id);
+    if (!selMat) return;
+    document.getElementById('addCategory').value = selMat.category;
+    showAddQty(selMat);
+}
+
+function showAddQty(rm) {
+    document.getElementById('addQtyArea').classList.remove('d-none');
+    if (rm.category === 'fabrics') {
+        document.getElementById('addFabricInputs').classList.remove('d-none');
+        document.getElementById('addSingleInput').classList.add('d-none');
+        document.getElementById('addLengthLabel').textContent = `Length (${rm.unit})`;
+        document.getElementById('addWidthLabel').textContent = `Width (${rm.unit})`;
+        document.getElementById('addFabricLength').value = '';
+        document.getElementById('addFabricWidth').value = '';
+        document.getElementById('addFabricPreview').textContent = '';
+    } else {
+        document.getElementById('addSingleInput').classList.remove('d-none');
+        document.getElementById('addFabricInputs').classList.add('d-none');
+        document.getElementById('addSingleLabel').textContent = `Quantity (${rm.unit})`;
+        document.getElementById('addSingleQty').value = '';
+    }
+}
+
+function computeAddFabricQty() {
+    const l = parseFloat(document.getElementById('addFabricLength').value);
+    const w = parseFloat(document.getElementById('addFabricWidth').value);
+    const u = selMat ? selMat.unit : '';
+    document.getElementById('addFabricPreview').textContent =
+        (!isNaN(l) && !isNaN(w) && l>0 && w>0) ? `Area: ${(l*w).toFixed(4)} ${u}²` : '';
+}
+
+function sanitizeNumber(inp) {
+    // Only allow digits and one decimal point; block letters
+    let v = inp.value.replace(/[^0-9.]/g, '');
+    const parts = v.split('.');
+    if (parts.length > 2) v = parts[0]+'.'+parts.slice(1).join('');
+    inp.value = v;
+}
+
+async function submitAdd() {
+    document.getElementById('addError').style.display = 'none';
+    if (!selMat) { showErr('addError','Please select a material.'); return; }
+    let qty, fl=null, fw=null;
+    if (selMat.category === 'fabrics') {
+        fl = parseFloat(document.getElementById('addFabricLength').value);
+        fw = parseFloat(document.getElementById('addFabricWidth').value);
+        if (!fl||!fw||fl<=0||fw<=0) { showErr('addError','Enter valid length and width (positive numbers only).'); return; }
+        qty = fl * fw;
+    } else {
+        qty = parseFloat(document.getElementById('addSingleQty').value);
+        if (!qty||qty<=0) { showErr('addError','Enter a valid quantity (positive number only).'); return; }
+    }
+
+    const r = await fetch(API_MATERIALS, {
+        method:'POST',
+        headers:{'Content-Type':'application/json','X-CSRFToken':getCsrf()},
+        body: JSON.stringify({raw_material_id:selMat.id, quantity_per_garment:qty, fabric_length:fl, fabric_width:fw})
+    });
+    const d = await r.json();
+    if (!r.ok || !d.success) { showErr('addError', d.error||'Error saving.'); return; }
+    loggedMats.push({id:d.id, raw_material_id:d.raw_material_id, material_name:d.material_name,
+        category:d.category, unit:d.unit, quantity_per_garment:d.quantity_per_garment,
+        fabric_length:d.fabric_length, fabric_width:d.fabric_width});
+    renderMats();
+    closeAddPanel();
+}
+
+// ── Edit Panel ────────────────────────────────────────────────────
+function openEdit(pmId) {
+    const pm = loggedMats.find(m => m.id === pmId);
+    if (!pm) return;
+    document.getElementById('editPmId').value = pmId;
+    document.getElementById('editTitle').textContent = pm.material_name;
+    document.getElementById('editCat').value = pm.category;
+    document.getElementById('editUnitVal').value = pm.unit;
+    document.getElementById('editError').style.display = 'none';
+    if (pm.category === 'fabrics') {
+        document.getElementById('editFabricInputs').classList.remove('d-none');
+        document.getElementById('editSingleInput').classList.add('d-none');
+        document.getElementById('editLengthLabel').textContent = `Length (${pm.unit})`;
+        document.getElementById('editWidthLabel').textContent = `Width (${pm.unit})`;
+        document.getElementById('editFabricLength').value = pm.fabric_length ?? '';
+        document.getElementById('editFabricWidth').value = pm.fabric_width ?? '';
+        computeEditFabricQty();
+    } else {
+        document.getElementById('editSingleInput').classList.remove('d-none');
+        document.getElementById('editFabricInputs').classList.add('d-none');
+        document.getElementById('editSingleLabel').textContent = `Quantity (${pm.unit})`;
+        document.getElementById('editSingleQty').value = pm.quantity_per_garment;
+    }
+    document.getElementById('editPanel').classList.remove('d-none');
+}
+
+function closeEditPanel() {
+    document.getElementById('editPanel').classList.add('d-none');
+}
+
+function computeEditFabricQty() {
+    const l = parseFloat(document.getElementById('editFabricLength').value);
+    const w = parseFloat(document.getElementById('editFabricWidth').value);
+    const u = document.getElementById('editUnitVal').value;
+    document.getElementById('editFabricPreview').textContent =
+        (!isNaN(l)&&!isNaN(w)&&l>0&&w>0) ? `Area: ${(l*w).toFixed(4)} ${u}²` : '';
+}
+
+async function saveEdit() {
+    const pmId = document.getElementById('editPmId').value;
+    const cat = document.getElementById('editCat').value;
+    let qty, fl=null, fw=null;
+    if (cat === 'fabrics') {
+        fl = parseFloat(document.getElementById('editFabricLength').value);
+        fw = parseFloat(document.getElementById('editFabricWidth').value);
+        if (!fl||!fw||fl<=0||fw<=0) { showErr('editError','Enter valid length and width.'); return; }
+        qty = fl * fw;
+    } else {
+        qty = parseFloat(document.getElementById('editSingleQty').value);
+        if (!qty||qty<=0) { showErr('editError','Enter a valid positive quantity.'); return; }
+    }
+    const r = await fetch(`/api/products/${PRODUCT_ID}/materials/${pmId}/`, {
+        method:'PUT',
+        headers:{'Content-Type':'application/json','X-CSRFToken':getCsrf()},
+        body: JSON.stringify({quantity_per_garment:qty, fabric_length:fl, fabric_width:fw})
+    });
+    const d = await r.json();
+    if (!r.ok || !d.success) { showErr('editError', d.error||'Error.'); return; }
+    const idx = loggedMats.findIndex(m => m.id === parseInt(pmId));
+    if (idx >= 0) { loggedMats[idx].quantity_per_garment=d.quantity_per_garment; loggedMats[idx].fabric_length=d.fabric_length; loggedMats[idx].fabric_width=d.fabric_width; }
+    renderMats();
+    closeEditPanel();
+}
+
+async function deleteMaterial() {
+    if (!confirm('Remove this material from the log?')) return;
+    const pmId = document.getElementById('editPmId').value;
+    const r = await fetch(`/api/products/${PRODUCT_ID}/materials/${pmId}/`, {
+        method:'DELETE', headers:{'X-CSRFToken':getCsrf()}
+    });
+    const d = await r.json();
+    if (!r.ok || !d.success) { showErr('editError', d.error||'Error.'); return; }
+    loggedMats = loggedMats.filter(m => m.id !== parseInt(pmId));
+    renderMats();
+    closeEditPanel();
+}
+
+function showErr(id, msg) {
+    const e = document.getElementById(id);
+    e.textContent = msg;
+    e.style.display = 'block';
+}
+</script>
 {% endblock %}

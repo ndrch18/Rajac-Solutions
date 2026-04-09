@@ -17,36 +17,58 @@
         <!-- IMAGE -->
         <div style="width:100%; height:180px; background:#e8edf2; border-radius:12px;
         display:flex; align-items:center; justify-content:center;" class="mb-4">
-
-            <span class="material-icons text-muted" style="font-size:60px;">
-                inventory_2
-            </span>
-
+            <span class="material-icons text-muted" style="font-size:60px;">inventory_2</span>
         </div>
 
         <!-- PRODUCT INFO -->
-
         <p><strong>Product Name:</strong> {{ product.product_name }}</p>
-
         <p><strong>Product ID:</strong> {{ product.product_id }}</p>
-
         <p><strong>Quantity:</strong> {{ product.quantity }}</p>
-
-        <form method="POST">
-            {% csrf_token %}
-            <input type="number" name="add_qty" min="1" class="form-control w-25 d-inline">
-            <button type="submit" class="btn btn-success btn-sm">Add Stock</button>
-        </form>
-
         <p><strong>Category:</strong> {{ product.get_product_category_display }}</p>
-
         <p><strong>Collection:</strong> {{ product.get_product_collection_display }}</p>
-
-        <p><strong>Description:</strong> {{ product.description }}</p>
-
         <p><strong>Price:</strong> ₱{{ product.price }}</p>
 
-        <div class="mt-4 d-flex gap-2">
+        <!-- ADD STOCK FORM -->
+        <div class="mt-3">
+            <p class="fw-600 mb-2" style="font-size:14px;">Add Finished Garments</p>
+            {% if product_materials %}
+            <p style="font-size:12px; color:#666;" class="mb-2">
+                <span class="material-icons align-middle" style="font-size:14px; color:#2e7d84;">info</span>
+                Adding garments will automatically deduct raw materials from inventory.
+            </p>
+            {% endif %}
+            <form method="POST">
+                {% csrf_token %}
+                <div class="d-flex align-items-center gap-2">
+                    <input type="number" name="add_qty" min="1" step="1" placeholder="Qty" class="form-control"
+                           style="width:100px; font-size:14px;" oninput="this.value=this.value.replace(/[^0-9]/g,'')">
+                    <button type="submit" class="btn btn-sm" style="background:#92d193; color:#000; border:none; border-radius:8px; padding:6px 16px; font-weight:600;">
+                        Add Stock
+                    </button>
+                </div>
+            </form>
+        </div>
 
+        <!-- MATERIALS USED PER GARMENT (read-only) -->
+        {% if product_materials %}
+        <div class="mt-4">
+            <p class="fw-600 mb-2" style="font-size:14px; color:#444;">Materials per Garment</p>
+            {% for pm in product_materials %}
+            <div style="background:#f4f7fa; border-radius:10px; padding:10px 12px; margin-bottom:8px;">
+                <p class="mb-0 fw-600" style="font-size:13px;">{{ pm.raw_material.material_name }}</p>
+                <p class="mb-0 text-muted" style="font-size:11px;">
+                    {{ pm.raw_material.get_material_category_display }} ·
+                    {% if pm.raw_material.material_category == 'fabrics' and pm.fabric_length %}
+                        {{ pm.fabric_length }} × {{ pm.fabric_width }} {{ pm.raw_material.material_unit.unit_name }} per garment
+                    {% else %}
+                        {{ pm.quantity_per_garment }} {{ pm.raw_material.material_unit.unit_name }} per garment
+                    {% endif %}
+                </p>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+    </div>
 </div>
 {% endblock %}

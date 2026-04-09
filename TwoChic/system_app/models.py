@@ -40,7 +40,7 @@ class RawMaterial(models.Model):
         on_delete=models.PROTECT
     )
 
-    material_quantity = models.PositiveIntegerField(default=0)
+    material_quantity = models.FloatField(default=0)
 
     material_unitprice = models.FloatField(
         default=0,
@@ -105,3 +105,22 @@ class Product(models.Model):
 
         
 
+
+class ProductMaterial(models.Model):
+    product = models.ForeignKey(
+        Product, on_delete=models.CASCADE, related_name='product_materials'
+    )
+    raw_material = models.ForeignKey(
+        RawMaterial, on_delete=models.CASCADE
+    )
+    # For all categories: the computed quantity consumed per garment
+    quantity_per_garment = models.FloatField(validators=[MinValueValidator(0.0001)])
+    # For fabric: store length & width separately (for display/edit)
+    fabric_length = models.FloatField(null=True, blank=True)
+    fabric_width = models.FloatField(null=True, blank=True)
+
+    class Meta:
+        unique_together = ('product', 'raw_material')
+
+    def __str__(self):
+        return f"{self.raw_material.material_name} for {self.product.product_name}"

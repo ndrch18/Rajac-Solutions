@@ -5,12 +5,14 @@ from system_app.models import Account, RawMaterial
 from .forms import RawMaterialForm, AddEmployeeForm, EditEmployeeNameForm
 from .models import MaterialUnit, Employee, EmployeeRole
 import random
-from .models import Product, ProductCategory, ProductCollection
+from .models import Product, ProductCategory, ProductCollection, ProductMaterial
 
 import json
 from django.core.serializers.json import DjangoJSONEncoder
 from django.urls import reverse
 from urllib.parse import urlencode
+from django.http import JsonResponse
+from django.views.decorators.http import require_POST
 
 #Global variable for login authentication
 account_id = 0
@@ -36,7 +38,6 @@ def login_view(request):
                 except Employee.DoesNotExist:
                     request.session['employee_name'] = 'Owner'
 
-                # Route based on the first character of the employee ID
                 if employee_id.startswith('0'):
                     return redirect('owner_homepage')
                 elif employee_id.startswith('1'):
@@ -53,11 +54,10 @@ def login_view(request):
     return render(request, 'system_app/login.html', {'message': message})
 
 def logout_view(request):
-    request.session.pop('account_id', None) 
+    request.session.pop('account_id', None)
     return redirect('login')
 
 def change_password_view(request):
-    # must be logged in
     account_id = request.session.get('account_id')
     if not account_id:
         return redirect('login')
@@ -88,7 +88,6 @@ def change_password_view(request):
 def owner_homepage(request):
     if not request.session.get('account_id'):
         return redirect('login')
-    # Enforce role: owner IDs start with '0'
     employee_id = request.session.get('employee_id', '')
     if not employee_id.startswith('0'):
         return redirect('login')
@@ -115,7 +114,6 @@ def prodemp_homepage(request):
     products = Product.objects.all()
     materials = RawMaterial.objects.all()
 
-    # Render page with all data
     return render(request, 'system_app/prodemp_home.html', {
         'employee_id': employee_id,
         'products': products,
@@ -123,31 +121,21 @@ def prodemp_homepage(request):
     })
 
 def prodman_matinv(request):
-    # Protect page
-    if not request.session.get('account_id'):
-        return redirect('login')
-
-    # -------------------------
-    # GET FILTERS
-    # -------------------------
     if not request.session.get('account_id'):
         return redirect('login')
 
     q = (request.GET.get('q') or "").strip()
     category = (request.GET.get('category') or "all").strip()
-    sort = (request.GET.get('sort') or "alpha").strip()  # default A–Z
+    sort = (request.GET.get('sort') or "alpha").strip()
 
     qs = RawMaterial.objects.all()
 
-    # Category filter (skip if "all")
     if category in {"fabrics", "trims", "accessories"}:
         qs = qs.filter(material_category=category)
 
-    # Search filter
     if q:
         qs = qs.filter(material_name__icontains=q)
 
-    # Sorting
     if sort == "highest":
         qs = qs.order_by("-material_quantity", "material_name")
     elif sort == "lowest":
@@ -155,20 +143,16 @@ def prodman_matinv(request):
     elif sort == "alpha_desc":
         qs = qs.order_by("-material_name")
     else:
-        qs = qs.order_by("material_name")  # A–Z
+        qs = qs.order_by("material_name")
 
-    # -------------------------
-    # HANDLE MODAL POST
-    # -------------------------
     if request.method == "POST":
         form = RawMaterialForm(request.POST)
 
         if form.is_valid():
             obj = form.save(commit=False)
-            obj.full_clean()  # runs your RawMaterial.clean()
+            obj.full_clean()
             obj.save()
 
-            # Preserve filters on redirect
             params = {}
             if category:
                 params["category"] = category
@@ -184,9 +168,6 @@ def prodman_matinv(request):
     else:
         form = RawMaterialForm()
 
-    # -------------------------
-    # BUILD UNIT MAP FOR JS
-    # -------------------------
     units_by_category = {
         "fabrics": [
             {"id": u.id, "name": u.unit_name}
@@ -202,9 +183,6 @@ def prodman_matinv(request):
         ],
     }
 
-    # -------------------------
-    #EDIT MODEL SUPPORT
-    # -------------------------
     edit_id = request.GET.get("edit")
     edit_target = None
     edit_form = None
@@ -217,9 +195,6 @@ def prodman_matinv(request):
             edit_target = None
             edit_form = None
 
-    # -------------------------
-    # CONTEXT
-    # -------------------------
     context = {
         "materials": qs,
         "selected_category": category,
@@ -243,7 +218,6 @@ def prodman_matinv(request):
 
 
 def prod_matinv(request):
-    # Protect page
     if not request.session.get('account_id'):
         return redirect('login')
 
@@ -251,7 +225,6 @@ def prod_matinv(request):
     if not employee_id.startswith('2'):
         return redirect('login')
 
-    # GET FILTERS
     q = (request.GET.get('q') or "").strip()
     category = (request.GET.get('category') or "all").strip()
     sort = (request.GET.get('sort') or "alpha").strip()
@@ -327,7 +300,6 @@ def edit_raw_material(request, pk):
 
     material = get_object_or_404(RawMaterial, pk=pk)
 
-    # Preserve current filters when redirecting back
     q = (request.GET.get("q") or "").strip()
     category = (request.GET.get("category") or "all").strip()
     sort = (request.GET.get("sort") or "alpha").strip()
@@ -352,7 +324,6 @@ def edit_raw_material(request, pk):
                 url = f"{url}?{urlencode(params)}"
             return redirect(url)
 
-    # If someone visits edit URL directly (GET), just bounce back and open modal
     params = {"edit": pk}
     if category:
         params["category"] = category
@@ -370,7 +341,6 @@ def delete_raw_material(request, pk):
 
     material = get_object_or_404(RawMaterial, pk=pk)
 
-    # Preserve filters from URL
     q = (request.GET.get("q") or "").strip()
     category = (request.GET.get("category") or "all").strip()
     sort = (request.GET.get("sort") or "alpha").strip()
@@ -378,7 +348,6 @@ def delete_raw_material(request, pk):
     if request.method == "POST":
         material.delete()
 
-    # Build redirect URL with preserved params
     params = {}
     if category:
         params["category"] = category
@@ -392,8 +361,8 @@ def delete_raw_material(request, pk):
         url = f"{url}?{urlencode(params)}"
 
     return redirect(url)
+
 def _generate_employee_id(role):
-    """Generate a unique 4-digit employee ID based on role."""
     prefix = '1' if role == 'production_manager' else '2'
     existing_ids = set(Employee.objects.values_list('employee_id', flat=True))
     for _ in range(1000):
@@ -417,7 +386,6 @@ def owner_manage_employees(request):
     edit_form = None
     edit_target = None
 
-    # ---- Handle Add Employee POST ----
     if request.method == 'POST' and 'action' in request.POST:
         action = request.POST.get('action')
 
@@ -433,10 +401,9 @@ def owner_manage_employees(request):
                         employee_name=name,
                         employee_role=role,
                     )
-                    # Also create an Account entry so they can log in
                     Account.objects.create(
                         employee_id=new_id,
-                        password=new_id,  # default password = their ID
+                        password=new_id,
                     )
                     message = f"Employee added successfully! ID: {new_id} | Default password: {new_id}"
                     message_type = 'success'
@@ -458,7 +425,6 @@ def owner_manage_employees(request):
                 message = "Please fix the errors below."
                 message_type = 'danger'
 
-    # ---- Open edit modal via GET ----
     edit_id_get = request.GET.get('edit')
     if edit_id_get and not edit_target:
         try:
@@ -494,9 +460,6 @@ def delete_employee(request, pk):
 
     return redirect('owner_manage_employees')
 
-# -------------------------------------------------------
-# Owner – Products sub-dashboard
-# -------------------------------------------------------
 def owner_products(request):
     if not request.session.get('account_id'):
         return redirect('login')
@@ -506,9 +469,6 @@ def owner_products(request):
     return render(request, 'system_app/owner_products.html')
 
 
-# -------------------------------------------------------
-# Owner – Add product form
-# -------------------------------------------------------
 from .forms import ProductForm
 from .models import Product
 
@@ -519,7 +479,6 @@ def owner_add_product(request):
     if not employee_id.startswith('0'):
         return redirect('login')
 
-    # Auto-generate the NEXT product ID for display
     last = Product.objects.order_by('-id').first()
     next_num = (last.id + 1) if last else 1
     next_product_id = f'#{next_num:05d}'
@@ -542,9 +501,6 @@ def owner_add_product(request):
     })
 
 
-# -------------------------------------------------------
-# Owner – Products list
-# -------------------------------------------------------
 def owner_products_list(request):
     if not request.session.get('account_id'):
         return redirect('login')
@@ -554,8 +510,6 @@ def owner_products_list(request):
 
     products = Product.objects.all().order_by('-id')
     return render(request, 'system_app/owner_products_list.html', {'products': products})
-
-#production employee materials page
 
 def employee_materials(request):
     if not request.session.get('account_id'):
@@ -567,8 +521,6 @@ def employee_materials(request):
         'materials': materials
     })
 
-    #production employee products page
-
 def employee_products(request):
     if not request.session.get('account_id'):
         return redirect('login')
@@ -579,13 +531,12 @@ def employee_products(request):
         'products': products
     })
 
-#production manager products page
 def prodman_products(request):
     if not request.session.get('account_id'):
         return redirect('login')
 
     employee_id = request.session.get('employee_id', '')
-    if not employee_id.startswith('1'):  # restrict to prodman
+    if not employee_id.startswith('1'):
         return redirect('login')
 
     products = Product.objects.all().order_by('-id')
@@ -599,23 +550,23 @@ def owner_product_detail(request, pk):
     if not request.session.get('account_id'):
         return redirect('login')
 
-    employee_id = request.session.get('employee_id','')
+    employee_id = request.session.get('employee_id', '')
     if not employee_id.startswith('0'):
         return redirect('login')
 
     product = Product.objects.get(pk=pk)
+    product_materials = ProductMaterial.objects.filter(product=product).select_related('raw_material')
 
     if request.method == "POST":
         price = request.POST.get("price")
-
         if price:
             product.price = float(price)
             product.save()
-
         return redirect('owner_product_detail', pk=pk)
 
     return render(request, 'system_app/owner_product_detail.html', {
-        'product': product
+        'product': product,
+        'product_materials': product_materials,
     })
 
 
@@ -629,14 +580,40 @@ def prodman_product_detail(request, pk):
         return redirect('login')
 
     product = Product.objects.get(pk=pk)
+    product_materials = ProductMaterial.objects.filter(product=product).select_related('raw_material')
+
+    if request.method == "POST":
+        action = request.POST.get('action')
+        if action == 'update_qty':
+            new_qty = request.POST.get('quantity')
+            if new_qty is not None and new_qty != '':
+                try:
+                    product.quantity = int(new_qty)
+                    product.save()
+                except ValueError:
+                    pass
+        return redirect('prodman_product_detail', pk=pk)
+
+    # Build available raw materials JSON for the Log Materials UI
+    raw_materials_data = []
+    for rm in RawMaterial.objects.filter(material_quantity__gt=0).order_by('material_name'):
+        raw_materials_data.append({
+            'id': rm.id,
+            'name': rm.material_name,
+            'category': rm.material_category,
+            'unit': rm.material_unit.unit_name,
+            'quantity': rm.material_quantity,
+        })
 
     return render(request, 'system_app/prodman_product_detail.html', {
-        'product': product
+        'product': product,
+        'product_materials': product_materials,
+        'raw_materials_json': json.dumps(raw_materials_data, cls=DjangoJSONEncoder),
     })
+
 
 # PRODUCTION EMPLOYEE product detail page
 def prodemp_product_detail(request, pk):
-
     if not request.session.get('account_id'):
         return redirect('login')
 
@@ -645,18 +622,32 @@ def prodemp_product_detail(request, pk):
         return redirect('login')
 
     product = Product.objects.get(pk=pk)
+    product_materials = ProductMaterial.objects.filter(product=product).select_related('raw_material')
 
     if request.method == "POST":
         add_qty = request.POST.get("add_qty")
 
         if add_qty:
-            product.quantity += int(add_qty)
-            product.save()
+            try:
+                qty_to_add = int(add_qty)
+                if qty_to_add > 0:
+                    product.quantity += qty_to_add
+                    product.save()
+
+                    # Deduct raw materials for each finished garment added
+                    for pm in product_materials:
+                        rm = pm.raw_material
+                        deduction = pm.quantity_per_garment * qty_to_add
+                        rm.material_quantity = max(0, rm.material_quantity - deduction)
+                        rm.save()
+            except (ValueError, TypeError):
+                pass
 
         return redirect('prodemp_product_detail', pk=pk)
 
     return render(request, 'system_app/prodemp_product_detail.html', {
-        'product': product
+        'product': product,
+        'product_materials': product_materials,
     })
 
 
@@ -668,9 +659,8 @@ def owner_delete_product(request, pk):
 
     return redirect('owner_products_list')
 
-#EDIT PRODUCT 
+# EDIT PRODUCT
 def owner_edit_product(request, pk):
-
     if not request.session.get('account_id'):
         return redirect('login')
 
@@ -681,9 +671,7 @@ def owner_edit_product(request, pk):
         product.product_category = request.POST.get("product_category")
         product.product_collection = request.POST.get("product_collection")
         product.price = request.POST.get("price")
-
         product.save()
-
         return redirect('owner_product_detail', pk=product.id)
 
     return render(request, 'system_app/owner_edit_product.html', {
@@ -691,3 +679,151 @@ def owner_edit_product(request, pk):
         'categories': ProductCategory,
         'collections': ProductCollection
     })
+
+
+# -------------------------------------------------------
+# AJAX API: Log Materials for a Product
+# -------------------------------------------------------
+
+def api_raw_materials_with_stock(request):
+    """Return raw materials that have stock, optionally filtered by category."""
+    if not request.session.get('account_id'):
+        return JsonResponse({'error': 'Unauthorized'}, status=401)
+
+    category = request.GET.get('category', '')
+    qs = RawMaterial.objects.filter(material_quantity__gt=0).order_by('material_name')
+    if category:
+        qs = qs.filter(material_category=category)
+
+    data = []
+    for rm in qs:
+        data.append({
+            'id': rm.id,
+            'name': rm.material_name,
+            'category': rm.material_category,
+            'unit': rm.material_unit.unit_name,
+            'quantity': rm.material_quantity,
+        })
+    return JsonResponse({'materials': data})
+
+
+def api_product_materials(request, pk):
+    """GET: list logged materials for a product. POST: add a new material."""
+    if not request.session.get('account_id'):
+        return JsonResponse({'error': 'Unauthorized'}, status=401)
+
+    product = get_object_or_404(Product, pk=pk)
+
+    if request.method == 'GET':
+        pms = ProductMaterial.objects.filter(product=product).select_related('raw_material')
+        data = []
+        for pm in pms:
+            rm = pm.raw_material
+            entry = {
+                'id': pm.id,
+                'raw_material_id': rm.id,
+                'material_name': rm.material_name,
+                'category': rm.material_category,
+                'unit': rm.material_unit.unit_name,
+                'quantity_per_garment': pm.quantity_per_garment,
+                'fabric_length': pm.fabric_length,
+                'fabric_width': pm.fabric_width,
+            }
+            data.append(entry)
+        return JsonResponse({'materials': data})
+
+    elif request.method == 'POST':
+        try:
+            body = json.loads(request.body)
+        except json.JSONDecodeError:
+            return JsonResponse({'error': 'Invalid JSON'}, status=400)
+
+        rm_id = body.get('raw_material_id')
+        qty = body.get('quantity_per_garment')
+        fabric_length = body.get('fabric_length')
+        fabric_width = body.get('fabric_width')
+
+        if not rm_id or qty is None:
+            return JsonResponse({'error': 'Missing fields'}, status=400)
+
+        try:
+            qty = float(qty)
+            if qty <= 0:
+                raise ValueError
+        except (ValueError, TypeError):
+            return JsonResponse({'error': 'Invalid quantity'}, status=400)
+
+        rm = get_object_or_404(RawMaterial, pk=rm_id)
+
+        # Check if already logged for this product
+        if ProductMaterial.objects.filter(product=product, raw_material=rm).exists():
+            return JsonResponse({'error': f'"{rm.material_name}" is already logged for this product. Use Edit to update it.'}, status=400)
+
+        pm = ProductMaterial.objects.create(
+            product=product,
+            raw_material=rm,
+            quantity_per_garment=qty,
+            fabric_length=float(fabric_length) if fabric_length is not None else None,
+            fabric_width=float(fabric_width) if fabric_width is not None else None,
+        )
+
+        return JsonResponse({
+            'success': True,
+            'id': pm.id,
+            'raw_material_id': rm.id,
+            'material_name': rm.material_name,
+            'category': rm.material_category,
+            'unit': rm.material_unit.unit_name,
+            'quantity_per_garment': pm.quantity_per_garment,
+            'fabric_length': pm.fabric_length,
+            'fabric_width': pm.fabric_width,
+        })
+
+    return JsonResponse({'error': 'Method not allowed'}, status=405)
+
+
+def api_product_material_detail(request, pk, pm_pk):
+    """PUT: update a product material. DELETE: remove it."""
+    if not request.session.get('account_id'):
+        return JsonResponse({'error': 'Unauthorized'}, status=401)
+
+    pm = get_object_or_404(ProductMaterial, pk=pm_pk, product__pk=pk)
+
+    if request.method == 'PUT':
+        try:
+            body = json.loads(request.body)
+        except json.JSONDecodeError:
+            return JsonResponse({'error': 'Invalid JSON'}, status=400)
+
+        qty = body.get('quantity_per_garment')
+        fabric_length = body.get('fabric_length')
+        fabric_width = body.get('fabric_width')
+
+        if qty is None:
+            return JsonResponse({'error': 'Missing quantity'}, status=400)
+
+        try:
+            qty = float(qty)
+            if qty <= 0:
+                raise ValueError
+        except (ValueError, TypeError):
+            return JsonResponse({'error': 'Invalid quantity'}, status=400)
+
+        pm.quantity_per_garment = qty
+        pm.fabric_length = float(fabric_length) if fabric_length is not None else None
+        pm.fabric_width = float(fabric_width) if fabric_width is not None else None
+        pm.save()
+
+        return JsonResponse({
+            'success': True,
+            'id': pm.id,
+            'quantity_per_garment': pm.quantity_per_garment,
+            'fabric_length': pm.fabric_length,
+            'fabric_width': pm.fabric_width,
+        })
+
+    elif request.method == 'DELETE':
+        pm.delete()
+        return JsonResponse({'success': True})
+
+    return JsonResponse({'error': 'Method not allowed'}, status=405)

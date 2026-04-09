@@ -35,4 +35,11 @@ urlpatterns = [
 
     path('owner/product/<int:pk>/edit/', views.owner_edit_product, name='owner_edit_product'),
     path('owner/product/<int:pk>/delete/', views.owner_delete_product, name='owner_delete_product'),
+
+    # API: Log Materials for Product
+    path('api/products/<int:pk>/materials/', views.api_product_materials, name='api_product_materials'),
+    path('api/products/<int:pk>/materials/<int:pm_pk>/', views.api_product_material_detail, name='api_product_material_detail'),
+    path('api/raw-materials/', views.api_raw_materials_with_stock, name='api_raw_materials_with_stock'),
 ]
+
+# Append new API URLs - need to patch the file
