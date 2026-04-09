@@ -23,5 +23,14 @@ urlpatterns = [
 
     path('prod/', views.prod_homepage, name='prod_homepage'),
     path('prod/matinv/', views.prod_matinv, name='prod_matinv'),
-    path('prod/matinv/', views.prod_matinv, name='prod_matinv'),
+    
+    path('prodemp/home/', views.employee_home, name='prodemp_home'),
+    path('prodemp/materials/', views.employee_materials, name='prodemp_matinv'),
+    path('prodemp/products/', views.employee_products, name='prodemp_products_list'),
+    
+    path('prodman/products/', views.prodman_products, name='prodman_products_list'),
+
+    path('owner/products/<int:pk>/', views.owner_product_detail, name='owner_product_detail'),
+    path('prodman/products/<int:pk>/', views.prodman_product_detail, name='prodman_product_detail'),
+    path('prodemp/products/<int:pk>/', views.prodemp_product_detail, name='prodemp_product_detail'),
 ]

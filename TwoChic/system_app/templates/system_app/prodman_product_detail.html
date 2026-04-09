@@ -1,0 +1,42 @@
+{% extends 'system_app/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container-fluid px-3">
+
+    <!-- HEADER -->
+    <div class="d-flex align-items-center mb-4 mt-2">
+        <a href="{% url 'prodman_products_list' %}" class="btn btn-link p-0 text-dark me-3">
+            <span class="material-icons">arrow_back</span>
+        </a>
+        <h6 class="mb-0 fw-500">Product Details</h6>
+    </div>
+
+    <div class="card shadow-sm p-4" style="border-radius:12px;">
+
+        <!-- IMAGE -->
+        <div style="width:100%; height:180px; background:#e8edf2; border-radius:12px;
+        display:flex; align-items:center; justify-content:center;" class="mb-4">
+
+            <span class="material-icons text-muted" style="font-size:60px;">
+                inventory_2
+            </span>
+
+        </div>
+
+        <!-- PRODUCT INFO -->
+
+        <p><strong>Product Name:</strong> {{ product.product_name }}</p>
+
+        <p><strong>Product ID:</strong> {{ product.product_id }}</p>
+
+        <p><strong>Category:</strong> {{ product.get_product_category_display }}</p>
+
+        <p><strong>Collection:</strong> {{ product.get_product_collection_display }}</p>
+
+        <p><strong>Description:</strong> {{ product.description }}</p>
+
+        <div class="mt-4 d-flex gap-2">
+
+</div>
+{% endblock %}

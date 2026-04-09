@@ -547,3 +547,102 @@ def owner_products_list(request):
 
     products = Product.objects.all().order_by('-id')
     return render(request, 'system_app/owner_products_list.html', {'products': products})
+
+#production employee homepage
+
+def employee_home(request):
+    if not request.session.get('account_id'):
+        return redirect('login')
+
+    products = Product.objects.all()
+    materials = RawMaterial.objects.all()
+
+    return render(request, 'system_app/prodemp_home.html', {
+        'products': products,
+        'materials': materials
+    })
+
+#production employee materials page
+
+def employee_materials(request):
+    if not request.session.get('account_id'):
+        return redirect('login')
+
+    materials = RawMaterial.objects.all().order_by('material_name')
+
+    return render(request, 'system_app/prodemp_matinv.html', {
+        'materials': materials
+    })
+
+    #production employee products page
+
+def employee_products(request):
+    if not request.session.get('account_id'):
+        return redirect('login')
+
+    products = Product.objects.all().order_by('product_name')
+
+    return render(request, 'system_app/prodemp_products_list.html', {
+        'products': products
+    })
+
+#production manager products page
+def prodman_products(request):
+    if not request.session.get('account_id'):
+        return redirect('login')
+
+    employee_id = request.session.get('employee_id', '')
+    if not employee_id.startswith('1'):  # restrict to prodman
+        return redirect('login')
+
+    products = Product.objects.all().order_by('-id')
+
+    return render(request, 'system_app/prodman_products_list.html', {
+        'products': products
+    })
+
+# OWNER product detail page
+def owner_product_detail(request, pk):
+    if not request.session.get('account_id'):
+        return redirect('login')
+
+    employee_id = request.session.get('employee_id','')
+    if not employee_id.startswith('0'):
+        return redirect('login')
+
+    product = Product.objects.get(pk=pk)
+
+    return render(request, 'system_app/owner_product_detail.html', {
+        'product': product
+    })
+
+
+# PRODUCTION MANAGER product detail page
+def prodman_product_detail(request, pk):
+    if not request.session.get('account_id'):
+        return redirect('login')
+
+    employee_id = request.session.get('employee_id', '')
+    if not employee_id.startswith('1'):
+        return redirect('login')
+
+    product = Product.objects.get(pk=pk)
+
+    return render(request, 'system_app/prodman_product_detail.html', {
+        'product': product
+    })
+
+# PRODUCTION EMPLOYEE product detail page
+def prodemp_product_detail(request, pk):
+    if not request.session.get('account_id'):
+        return redirect('login')
+
+    employee_id = request.session.get('employee_id', '')
+    if not employee_id.startswith('2'):
+        return redirect('login')
+
+    product = Product.objects.get(pk=pk)
+
+    return render(request, 'system_app/prodemp_product_detail.html', {
+        'product': product
+    })
