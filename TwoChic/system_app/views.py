@@ -42,7 +42,7 @@ def login_view(request):
                 elif employee_id.startswith('1'):
                     return redirect('prodman_homepage')
                 elif employee_id.startswith('2'):
-                    return redirect('prod_homepage')
+                    return redirect('prodemp_home')
                 else:
                     message = "Unrecognized account type. Please contact your administrator."
             else:
@@ -106,14 +106,20 @@ def prodman_homepage(request):
         'employee_id': employee_id,
     })
 
-def prod_homepage(request):
+def prodemp_homepage(request):
     if not request.session.get('account_id'):
         return redirect('login')
     employee_id = request.session.get('employee_id', '')
     if not employee_id.startswith('2'):
         return redirect('login')
-    return render(request, 'system_app/prod_home.html', {
+    products = Product.objects.all()
+    materials = RawMaterial.objects.all()
+
+    # Render page with all data
+    return render(request, 'system_app/prodemp_home.html', {
         'employee_id': employee_id,
+        'products': products,
+        'materials': materials,
     })
 
 def prodman_matinv(request):
@@ -548,20 +554,6 @@ def owner_products_list(request):
 
     products = Product.objects.all().order_by('-id')
     return render(request, 'system_app/owner_products_list.html', {'products': products})
-
-#production employee homepage
-
-def employee_home(request):
-    if not request.session.get('account_id'):
-        return redirect('login')
-
-    products = Product.objects.all()
-    materials = RawMaterial.objects.all()
-
-    return render(request, 'system_app/prodemp_home.html', {
-        'products': products,
-        'materials': materials
-    })
 
 #production employee materials page
 

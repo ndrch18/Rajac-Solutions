@@ -21,10 +21,9 @@ urlpatterns = [
     path('prodman/matinv/<int:pk>/edit/', views.edit_raw_material, name='edit_raw_material'),
     path('prodman/matinv/<int:pk>/delete/', views.delete_raw_material, name='delete_raw_material'),
 
-    path('prod/', views.prod_homepage, name='prod_homepage'),
+    path('prodemp/home', views.prodemp_homepage, name='prodemp_home'),
     path('prod/matinv/', views.prod_matinv, name='prod_matinv'),
     
-    path('prodemp/home/', views.employee_home, name='prodemp_home'),
     path('prodemp/materials/', views.employee_materials, name='prodemp_matinv'),
     path('prodemp/products/', views.employee_products, name='prodemp_products_list'),
     
