@@ -90,6 +90,7 @@ class Product(models.Model):
     product_collection = models.CharField(max_length=20, choices=ProductCollection.choices)
 
     quantity = models.PositiveIntegerField(default=0)
+    price = models.FloatField(default=0)
 
     def save(self, *args, **kwargs):
         if not self.product_id:

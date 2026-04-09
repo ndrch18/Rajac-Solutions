@@ -1,0 +1,80 @@
+{% extends 'system_app/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container-fluid px-3">
+
+    <!-- HEADER -->
+    <div class="d-flex align-items-center mb-4 mt-2">
+        <a href="{% url 'owner_product_detail' product.id %}" class="btn btn-link p-0 text-dark me-3">
+            <span class="material-icons">arrow_back</span>
+        </a>
+        <h6 class="mb-0 fw-500">Edit Product</h6>
+    </div>
+
+    <!-- CARD -->
+    <div class="card shadow-sm p-4" style="border-radius:12px; max-width:600px;">
+
+        <form method="POST">
+            {% csrf_token %}
+
+            <!-- PRODUCT NAME -->
+            <div class="mb-3">
+                <label class="form-label fw-semibold">Product Name</label>
+                <input type="text"
+                       name="product_name"
+                       class="form-control"
+                       value="{{ product.product_name }}">
+            </div>
+
+            <!-- CATEGORY -->
+            <div class="mb-3">
+                <label class="form-label fw-semibold">Category</label>
+                <select name="product_category" class="form-control">
+
+                    {% for value,label in categories.choices %}
+                    <option value="{{ value }}"
+                    {% if product.product_category == value %}selected{% endif %}>
+                        {{ label }}
+                    </option>
+                    {% endfor %}
+
+                </select>
+            </div>
+
+            <!-- COLLECTION -->
+            <div class="mb-3">
+                <label class="form-label fw-semibold">Collection</label>
+                <select name="product_collection" class="form-control">
+
+                    {% for value,label in collections.choices %}
+                    <option value="{{ value }}"
+                    {% if product.product_collection == value %}selected{% endif %}>
+                        {{ label }}
+                    </option>
+                    {% endfor %}
+
+                </select>
+            </div>
+
+            <!-- PRICE -->
+            <div class="mb-4">
+                <label class="form-label fw-semibold">Price (₱)</label>
+                <input type="number"
+                       step="0.01"
+                       name="price"
+                       class="form-control"
+                       value="{{ product.price }}">
+            </div>
+
+            <!-- BUTTON -->
+            <button type="submit" class="btn btn-info px-4">
+                Save Changes
+            </button>
+
+        </form>
+
+    </div>
+
+</div>
+{% endblock %}
