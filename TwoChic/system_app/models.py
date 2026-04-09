@@ -89,6 +89,8 @@ class Product(models.Model):
     product_category = models.CharField(max_length=20, choices=ProductCategory.choices)
     product_collection = models.CharField(max_length=20, choices=ProductCollection.choices)
 
+    quantity = models.PositiveIntegerField(default=0)
+
     def save(self, *args, **kwargs):
         if not self.product_id:
             last = Product.objects.order_by('-id').first()
@@ -98,4 +100,7 @@ class Product(models.Model):
 
     def __str__(self):
         return f"{self.product_id} – {self.product_name}"
+
+
+        
 

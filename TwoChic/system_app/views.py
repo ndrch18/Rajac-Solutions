@@ -634,6 +634,7 @@ def prodman_product_detail(request, pk):
 
 # PRODUCTION EMPLOYEE product detail page
 def prodemp_product_detail(request, pk):
+
     if not request.session.get('account_id'):
         return redirect('login')
 
@@ -642,6 +643,15 @@ def prodemp_product_detail(request, pk):
         return redirect('login')
 
     product = Product.objects.get(pk=pk)
+
+    if request.method == "POST":
+        add_qty = request.POST.get("add_qty")
+
+        if add_qty:
+            product.quantity += int(add_qty)
+            product.save()
+
+        return redirect('prodemp_product_detail', pk=pk)
 
     return render(request, 'system_app/prodemp_product_detail.html', {
         'product': product
@@ -676,3 +686,5 @@ def owner_delete_product(request, pk):
         product.delete()
 
     return redirect('owner_products_list')
+
+
