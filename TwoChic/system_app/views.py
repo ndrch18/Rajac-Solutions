@@ -646,3 +646,33 @@ def prodemp_product_detail(request, pk):
     return render(request, 'system_app/prodemp_product_detail.html', {
         'product': product
     })
+
+# EDIT PRODUCT
+def owner_edit_product(request, pk):
+    if not request.session.get('account_id'):
+        return redirect('login')
+
+    employee_id = request.session.get('employee_id','')
+    if not employee_id.startswith('0'):
+        return redirect('login')
+
+    product = Product.objects.get(pk=pk)
+
+    if request.method == "POST":
+        product.product_name = request.POST.get('product_name')
+        product.description = request.POST.get('description')
+        product.save()
+        return redirect('owner_product_detail', pk=product.id)
+
+    return render(request,'system_app/owner_edit_product.html',{
+        'product':product
+    })
+
+
+# DELETE PRODUCT
+def owner_delete_product(request, pk):
+    if request.method == "POST":
+        product = Product.objects.get(pk=pk)
+        product.delete()
+
+    return redirect('owner_products_list')
