@@ -124,3 +124,19 @@ class ProductMaterial(models.Model):
 
     def __str__(self):
         return f"{self.raw_material.material_name} for {self.product.product_name}"
+
+
+class Order(models.Model):
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Order #{self.id}"
+    
+
+class OrderItem(models.Model):
+    order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name='items')
+    product = models.ForeignKey(Product, on_delete=models.CASCADE)
+    quantity = models.PositiveIntegerField()
+
+    def __str__(self):
+        return f"{self.product.product_name} x {self.quantity}"

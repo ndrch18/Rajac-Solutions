@@ -532,6 +532,7 @@ def employee_products(request):
     })
 
 def prodman_products(request):
+
     if not request.session.get('account_id'):
         return redirect('login')
 
@@ -539,11 +540,43 @@ def prodman_products(request):
     if not employee_id.startswith('1'):
         return redirect('login')
 
-    products = Product.objects.all().order_by('-id')
+    products = Product.objects.all()
+
+  
+    order_items = request.session.get('order_items', [])
+
+    if request.method == "POST":
+        product_id = request.POST.get("product_id")
+        qty = request.POST.get("quantity")
+
+
+        if product_id and qty:
+            qty = int(qty)
+            product = Product.objects.get(id=product_id)
+
+  
+            if qty > 0 and product.quantity >= qty:
+                # deduct stock
+                product.quantity -= qty
+                product.save()
+
+                # add to order list
+                order_items.append({
+                    'name': product.product_name,
+                    'qty': qty
+                })
+
+  
+                request.session['order_items'] = order_items
+                request.session.modified = True
+
+        return redirect('prodman_products_list')
 
     return render(request, 'system_app/prodman_products_list.html', {
-        'products': products
+        'products': products,
+        'order_items': order_items
     })
+
 
 # OWNER product detail page
 def owner_product_detail(request, pk):
@@ -827,3 +860,26 @@ def api_product_material_detail(request, pk, pm_pk):
         return JsonResponse({'success': True})
 
     return JsonResponse({'error': 'Method not allowed'}, status=405)
+
+
+#order list for prodman
+def prodman_order_summary(request):
+
+    if not request.session.get('account_id'):
+        return redirect('login')
+
+    employee_id = request.session.get('employee_id', '')
+    if not employee_id.startswith('1'):
+        return redirect('login')
+
+    order_items = request.session.get('order_items', [])
+
+    # ✅ COMPLETE ORDER
+    if request.method == "POST":
+        request.session['order_items'] = []
+        request.session.modified = True
+        return redirect('prodman_products_list')
+
+    return render(request, 'system_app/prodman_order_summary.html', {
+        'order_items': order_items
+    })

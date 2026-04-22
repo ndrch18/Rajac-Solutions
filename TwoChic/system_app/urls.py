@@ -21,9 +21,9 @@ urlpatterns = [
     path('prodman/matinv/<int:pk>/edit/', views.edit_raw_material, name='edit_raw_material'),
     path('prodman/matinv/<int:pk>/delete/', views.delete_raw_material, name='delete_raw_material'),
 
-    path('prodemp/home', views.prodemp_homepage, name='prodemp_home'),
+    #path('prod/', views.prod_homepage, name='prod_homepage'),
     path('prod/matinv/', views.prod_matinv, name='prod_matinv'),
-    
+    path('prodemp/home/', views.prodemp_homepage, name='prodemp_home'),
     path('prodemp/materials/', views.employee_materials, name='prodemp_matinv'),
     path('prodemp/products/', views.employee_products, name='prodemp_products_list'),
     
@@ -35,11 +35,8 @@ urlpatterns = [
 
     path('owner/product/<int:pk>/edit/', views.owner_edit_product, name='owner_edit_product'),
     path('owner/product/<int:pk>/delete/', views.owner_delete_product, name='owner_delete_product'),
+    path('owner/product/<int:pk>/edit/', views.owner_edit_product, name='owner_edit_product'),
 
-    # API: Log Materials for Product
-    path('api/products/<int:pk>/materials/', views.api_product_materials, name='api_product_materials'),
-    path('api/products/<int:pk>/materials/<int:pm_pk>/', views.api_product_material_detail, name='api_product_material_detail'),
-    path('api/raw-materials/', views.api_raw_materials_with_stock, name='api_raw_materials_with_stock'),
+    path('prodman/order/', views.prodman_order_summary, name='prodman_order_summary'),
+    
 ]
-
-# Append new API URLs - need to patch the file

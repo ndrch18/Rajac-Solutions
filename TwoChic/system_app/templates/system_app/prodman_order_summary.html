@@ -1,0 +1,28 @@
+{% extends 'system_app/base.html' %}
+
+{% block content %}
+<div class="container px-3">
+
+    <h5 class="mb-3 mt-2">Order Summary</h5>
+
+    <ul class="list-group mb-3">
+        {% for item in order_items %}
+        <li class="list-group-item d-flex justify-content-between">
+            {{ item.name }}
+            <span>x{{ item.qty }}</span>
+        </li>
+        {% empty %}
+        <li class="list-group-item text-muted">No items</li>
+        {% endfor %}
+    </ul>
+
+    <!-- COMPLETE BUTTON -->
+    <form method="POST">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-success w-100">
+            Complete Order
+        </button>
+    </form>
+
+</div>
+{% endblock %}
