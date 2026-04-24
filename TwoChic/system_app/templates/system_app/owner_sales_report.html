@@ -1,0 +1,109 @@
+{% extends 'system_app/base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-start gap-3 mb-4">
+        <div>
+            <h5 class="mb-2">Sales & Expenses Report</h5>
+            <p class="text-muted mb-0">Overview of completed sales, expense estimates, and top products sold.</p>
+        </div>
+        <a href="{% url 'owner_homepage' %}" class="btn btn-outline-secondary">Back to dashboard</a>
+    </div>
+
+    <div class="row g-3">
+        <div class="col-6 col-lg-3">
+            <div class="card shadow-sm h-100">
+                <div class="card-body">
+                    <h6 class="text-uppercase text-muted mb-3">Total Sales</h6>
+                    <h3 class="mb-0">₱{{ total_sales|floatformat:2 }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-lg-3">
+            <div class="card shadow-sm h-100">
+                <div class="card-body">
+                    <h6 class="text-uppercase text-muted mb-3">Total Expenses</h6>
+                    <h3 class="mb-0">₱{{ total_expenses|floatformat:2 }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-lg-3">
+            <div class="card shadow-sm h-100">
+                <div class="card-body">
+                    <h6 class="text-uppercase text-muted mb-3">Net Profit</h6>
+                    <h3 class="mb-0">₱{{ net_profit|floatformat:2 }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-lg-3">
+            <div class="card shadow-sm h-100">
+                <div class="card-body">
+                    <h6 class="text-uppercase text-muted mb-3">Total Products Sold</h6>
+                    <h3 class="mb-0">{{ total_products_sold }}</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card shadow-sm mt-4">
+        <div class="card-body">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <div>
+                    <h6 class="mb-2">Analysis</h6>
+                    <p class="text-muted mb-0">A quick view of sales and expense trends over the last 6 months.</p>
+                </div>
+                <div class="d-flex gap-2">
+                    <span class="badge bg-primary">Sales</span>
+                    <span class="badge bg-danger">Expenses</span>
+                </div>
+            </div>
+
+            <div class="d-flex align-items-end justify-content-between px-2" style="height:200px; gap:1rem;">
+                {% for item in chart_data %}
+                <div class="d-flex flex-column align-items-center" style="flex:1;">
+                    <!-- Grouped bars -->
+                    <div class="d-flex align-items-end justify-content-center w-100" style="height:170px; gap:4px;">
+                        <div style="width:45%; height:{{ item.sales_pct }}%; background:#5AB8C5; border-radius:6px 6px 0 0; transition: height .3s ease;" title="Sales"></div>
+                        <div style="width:45%; height:{{ item.expenses_pct }}%; background:#E05A5A; border-radius:6px 6px 0 0; opacity:.85; transition: height .3s ease;" title="Expenses"></div>
+                    </div>
+                    <!-- Month label -->
+                    <small class="text-muted mt-1">{{ item.label }}</small>
+                </div>
+                {% endfor %}
+            </div>
+
+        </div>
+    </div>
+
+    <div class="row mt-4 g-3">
+        <div class="col-lg-6">
+            <div class="card shadow-sm h-100">
+                <div class="card-body">
+                    <h6 class="mb-3">Top Products Sold</h6>
+                    {% if top_products %}
+                    <ul class="list-group list-group-flush">
+                        {% for product in top_products %}
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <span>{{ product.name }}</span>
+                            <span class="badge bg-secondary rounded-pill">{{ product.quantity }}</span>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                    {% else %}
+                    <p class="text-muted mb-0">No completed sales yet. This report will update automatically once orders are recorded.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-6">
+            <div class="card shadow-sm h-100">
+                <div class="card-body">
+                    <h6 class="mb-3">Report Notes</h6>
+                    <p class="text-muted mb-2">Sales are calculated from completed order items, using product price and order quantity.</p>
+                    <p class="text-muted mb-0">Expenses are estimated from the material cost of sold products.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

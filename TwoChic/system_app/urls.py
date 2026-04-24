@@ -14,6 +14,7 @@ urlpatterns = [
     path('owner/products/', views.owner_products, name='owner_products'),
     path('owner/products/add/', views.owner_add_product, name='owner_add_product'),
     path('owner/products/list/', views.owner_products_list, name='owner_products_list'),
+    path('owner/sales-report/', views.owner_sales_report, name='owner_sales_report'),
     path('owner/employees/<int:pk>/delete/', views.delete_employee, name='delete_employee'),
 
     path('prodman/', views.prodman_homepage, name='prodman_homepage'),

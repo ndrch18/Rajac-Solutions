@@ -3,26 +3,55 @@
 {% block content %}
 <div class="container px-3">
 
+    <div class="mb-3">
+        <a href="{% url 'prodman_products_list' %}" class="btn btn-link p-0 text-dark me-3">
+            <span class="material-icons" style="vertical-align: middle; font-size: 20px;">arrow_back</span>
+        </a>
+    </div>
+
     <h5 class="mb-3 mt-2">Order Summary</h5>
 
     <ul class="list-group mb-3">
         {% for item in order_items %}
-        <li class="list-group-item d-flex justify-content-between">
-            {{ item.name }}
-            <span>x{{ item.qty }}</span>
+        <li class="list-group-item d-flex justify-content-between align-items-center gap-2">
+            <span>{{ item.name }}</span>
+
+            <div class="d-flex align-items-center gap-1">
+                <!-- Edit qty form -->
+                <form method="POST" action="{% url 'prodman_order_summary' %}" class="d-flex align-items-center gap-1">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="update">
+                    <input type="hidden" name="product_id" value="{{ item.product_id }}">
+                    <input type="number" name="qty" value="{{ item.qty }}" min="1"
+                           class="form-control form-control-sm" style="width:70px;">
+                    <button type="submit" class="btn btn-sm btn-outline-primary">Save</button>
+                </form>
+
+                <!-- Delete form -->
+                <form method="POST" action="{% url 'prodman_order_summary' %}">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="delete">
+                    <input type="hidden" name="product_id" value="{{ item.product_id }}">
+                    <button type="submit" class="btn btn-sm btn-outline-danger">
+                        <span class="material-icons" style="font-size:16px; vertical-align:middle;">delete</span>
+                    </button>
+                </form>
+            </div>
         </li>
         {% empty %}
         <li class="list-group-item text-muted">No items</li>
         {% endfor %}
     </ul>
 
-    <!-- COMPLETE BUTTON -->
+    {% if order_items %}
     <form method="POST">
         {% csrf_token %}
+        <input type="hidden" name="action" value="complete">
         <button type="submit" class="btn btn-success w-100">
             Complete Order
         </button>
     </form>
+    {% endif %}
 
 </div>
 {% endblock %}

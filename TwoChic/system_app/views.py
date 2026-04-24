@@ -5,10 +5,12 @@ from system_app.models import Account, RawMaterial
 from .forms import RawMaterialForm, AddEmployeeForm, EditEmployeeNameForm
 from .models import MaterialUnit, Employee, EmployeeRole
 import random
-from .models import Product, ProductCategory, ProductCollection, ProductMaterial
+from .models import Product, ProductCategory, ProductCollection, ProductMaterial, Order, OrderItem  # ✅ FIX: Added OrderItem import
 
 import json
 from django.core.serializers.json import DjangoJSONEncoder
+from datetime import datetime
+from calendar import month_abbr
 from django.urls import reverse
 from urllib.parse import urlencode
 from django.http import JsonResponse
@@ -94,6 +96,89 @@ def owner_homepage(request):
     return render(request, 'system_app/owner_home.html', {
         'employee_id': employee_id,
     })
+
+def owner_sales_report(request):
+    if not request.session.get('account_id'):
+        return redirect('login')
+    employee_id = request.session.get('employee_id', '')
+    if not employee_id.startswith('0'):
+        return redirect('login')
+
+    orders = Order.objects.prefetch_related('items__product__product_materials__raw_material').all()
+    total_sales = 0.0
+    total_expenses = 0.0
+    total_products_sold = 0
+    product_quantities = {}
+
+    today = timezone.now()
+    month_keys = []
+    month_data = {}
+    for i in range(5, -1, -1):
+        month = today.month - i
+        year = today.year
+        while month <= 0:
+            month += 12
+            year -= 1
+        key = (year, month)
+        month_keys.append(key)
+        month_data[key] = {
+            'label': month_abbr[month],
+            'sales': 0.0,
+            'expenses': 0.0,
+        }
+
+    for order in orders:
+        for item in order.items.all():
+            product = item.product
+            qty = item.quantity
+            total_products_sold += qty
+            item_sales = product.price * qty
+            total_sales += item_sales
+            product_quantities[product.product_name] = product_quantities.get(product.product_name, 0) + qty
+
+            item_cost = 0.0
+            for pm in product.product_materials.all():
+                if pm.quantity_per_garment and pm.raw_material.material_unitprice:
+                    item_cost += pm.quantity_per_garment * pm.raw_material.material_unitprice * qty
+            total_expenses += item_cost
+
+            order_month = (order.created_at.year, order.created_at.month)
+            if order_month in month_data:
+                month_data[order_month]['sales'] += item_sales
+                month_data[order_month]['expenses'] += item_cost
+
+    net_profit = total_sales - total_expenses
+    top_products = sorted(
+        [{'name': name, 'quantity': qty} for name, qty in product_quantities.items()],
+        key=lambda p: p['quantity'],
+        reverse=True
+    )[:5]
+
+    max_value = max(
+        [entry['sales'] for entry in month_data.values()] +
+        [entry['expenses'] for entry in month_data.values()] + [1]
+    )
+
+    chart_data = []
+    for key in month_keys:
+        entry = month_data[key]
+        chart_data.append({
+            'label': entry['label'],
+            'sales': entry['sales'],
+            'expenses': entry['expenses'],
+            'sales_pct': int((entry['sales'] / max_value) * 100) if max_value else 0,
+            'expenses_pct': int((entry['expenses'] / max_value) * 100) if max_value else 0,
+        })
+
+    return render(request, 'system_app/owner_sales_report.html', {
+        'total_sales': total_sales,
+        'total_expenses': total_expenses,
+        'net_profit': net_profit,
+        'total_products_sold': total_products_sold,
+        'top_products': top_products,
+        'chart_data': chart_data,
+    })
+
 
 def prodman_homepage(request):
     if not request.session.get('account_id'):
@@ -542,31 +627,25 @@ def prodman_products(request):
 
     products = Product.objects.all()
 
-  
     order_items = request.session.get('order_items', [])
 
     if request.method == "POST":
         product_id = request.POST.get("product_id")
         qty = request.POST.get("quantity")
 
-
         if product_id and qty:
             qty = int(qty)
             product = Product.objects.get(id=product_id)
 
-  
+            # ✅ FIX: Only add to cart here — do NOT deduct stock yet.
+            # Stock is deducted in prodman_order_summary when the order is completed.
             if qty > 0 and product.quantity >= qty:
-                # deduct stock
-                product.quantity -= qty
-                product.save()
-
-                # add to order list
                 order_items.append({
+                    'product_id': product.id,
                     'name': product.product_name,
                     'qty': qty
                 })
 
-  
                 request.session['order_items'] = order_items
                 request.session.modified = True
 
@@ -862,7 +941,7 @@ def api_product_material_detail(request, pk, pm_pk):
     return JsonResponse({'error': 'Method not allowed'}, status=405)
 
 
-#order list for prodman
+# order summary for prodman
 def prodman_order_summary(request):
 
     if not request.session.get('account_id'):
@@ -874,11 +953,52 @@ def prodman_order_summary(request):
 
     order_items = request.session.get('order_items', [])
 
-    # ✅ COMPLETE ORDER
     if request.method == "POST":
-        request.session['order_items'] = []
-        request.session.modified = True
-        return redirect('prodman_products_list')
+        action = request.POST.get('action')
+
+        # COMPLETE ORDER
+        if action == "complete":
+            if order_items:
+                order = Order.objects.create()
+                for item in order_items:
+                    try:
+                        product = Product.objects.get(id=item.get('product_id'))
+                        qty = item.get('qty', 0)
+                        OrderItem.objects.create(
+                            order=order,
+                            product=product,
+                            quantity=qty
+                        )
+                        product.quantity = max(0, product.quantity - qty)
+                        product.save()
+                    except Exception as e:
+                        print(f"Order item error: {e}")
+                        continue
+
+            request.session['order_items'] = []
+            request.session.modified = True
+            return redirect('prodman_products_list')
+
+        # UPDATE QTY
+        elif action == "update":
+            product_id = int(request.POST.get('product_id'))
+            new_qty = int(request.POST.get('qty', 1))
+            if new_qty > 0:
+                for item in order_items:
+                    if item['product_id'] == product_id:
+                        item['qty'] = new_qty
+                        break
+            request.session['order_items'] = order_items
+            request.session.modified = True
+            return redirect('prodman_order_summary')
+
+        # DELETE ITEM
+        elif action == "delete":
+            product_id = int(request.POST.get('product_id'))
+            order_items = [i for i in order_items if i['product_id'] != product_id]
+            request.session['order_items'] = order_items
+            request.session.modified = True
+            return redirect('prodman_order_summary')
 
     return render(request, 'system_app/prodman_order_summary.html', {
         'order_items': order_items
