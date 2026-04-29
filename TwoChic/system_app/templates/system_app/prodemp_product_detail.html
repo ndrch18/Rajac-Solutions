@@ -28,6 +28,14 @@
         <p><strong>Collection:</strong> {{ product.get_product_collection_display }}</p>
         <p><strong>Price:</strong> ₱{{ product.price }}</p>
 
+        <!-- VIEW MATERIALS BUTTON -->
+        <button class="btn btn-sm mt-2"
+                style="background:#C6E8ED; color:#2e7d84; border:none; border-radius:8px; padding:8px 16px;"
+                data-bs-toggle="modal" data-bs-target="#materialsModal">
+            <span class="material-icons align-middle" style="font-size:16px;">inventory</span>
+            View Materials
+        </button>
+
         <!-- ADD STOCK FORM -->
         <div class="mt-3">
             <p class="fw-600 mb-2" style="font-size:14px;">Add Finished Garments</p>
@@ -49,26 +57,114 @@
             </form>
         </div>
 
-        <!-- MATERIALS USED PER GARMENT (read-only) -->
-        {% if product_materials %}
-        <div class="mt-4">
-            <p class="fw-600 mb-2" style="font-size:14px; color:#444;">Materials per Garment</p>
-            {% for pm in product_materials %}
-            <div style="background:#f4f7fa; border-radius:10px; padding:10px 12px; margin-bottom:8px;">
-                <p class="mb-0 fw-600" style="font-size:13px;">{{ pm.raw_material.material_name }}</p>
-                <p class="mb-0 text-muted" style="font-size:11px;">
-                    {{ pm.raw_material.get_material_category_display }} ·
-                    {% if pm.raw_material.material_category == 'fabrics' and pm.fabric_length %}
-                        {{ pm.fabric_length }} × {{ pm.fabric_width }} {{ pm.raw_material.material_unit.unit_name }} per garment
-                    {% else %}
-                        {{ pm.quantity_per_garment }} {{ pm.raw_material.material_unit.unit_name }} per garment
-                    {% endif %}
-                </p>
-            </div>
-            {% endfor %}
-        </div>
-        {% endif %}
-
     </div>
 </div>
+
+<!-- MATERIALS MODAL -->
+<div class="modal fade" id="materialsModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content" style="border-radius:16px; overflow:hidden;">
+
+      <div style="background:#C6E8ED; padding:14px 18px; display:flex; justify-content:space-between; align-items:center;">
+        <span style="font-size:15px; font-weight:600; color:#1a5c63;">Materials per Garment</span>
+        <button type="button" data-bs-dismiss="modal" style="border:none; background:none; font-size:20px; color:#2e7d84;">&times;</button>
+      </div>
+
+      <div class="modal-body p-3">
+
+        <!-- Fabrics -->
+        <button class="mat-dropdown-btn">Fabrics</button>
+        <div class="mat-dropdown-content">
+          {% if fabrics %}
+            {% for pm in fabrics %}
+            <p class="mb-1" style="font-size:13px;">
+              {{ pm.raw_material.material_name }} —
+              {% if pm.fabric_length %}
+                {{ pm.fabric_length }} {{ pm.raw_material.material_unit.unit_name }}
+              {% else %}
+                {{ pm.quantity_per_garment }} {{ pm.raw_material.material_unit.unit_name }}
+              {% endif %}
+              per garment
+            </p>
+            {% endfor %}
+          {% else %}
+            <p class="text-muted" style="font-size:13px;">No fabrics logged.</p>
+          {% endif %}
+        </div>
+
+        <!-- Trims -->
+        <button class="mat-dropdown-btn">Trims</button>
+        <div class="mat-dropdown-content">
+          {% if trims %}
+            {% for pm in trims %}
+            <p class="mb-1" style="font-size:13px;">
+              {{ pm.raw_material.material_name }} —
+              {{ pm.quantity_per_garment }} {{ pm.raw_material.material_unit.unit_name }} per garment
+            </p>
+            {% endfor %}
+          {% else %}
+            <p class="text-muted" style="font-size:13px;">No trims logged.</p>
+          {% endif %}
+        </div>
+
+        <!-- Accessories -->
+        <button class="mat-dropdown-btn">Accessories</button>
+        <div class="mat-dropdown-content">
+          {% if accessories %}
+            {% for pm in accessories %}
+            <p class="mb-1" style="font-size:13px;">
+              {{ pm.raw_material.material_name }} —
+              {{ pm.quantity_per_garment }} {{ pm.raw_material.material_unit.unit_name }} per garment
+            </p>
+            {% endfor %}
+          {% else %}
+            <p class="text-muted" style="font-size:13px;">No accessories logged.</p>
+          {% endif %}
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+.mat-dropdown-btn {
+    width: 100%;
+    text-align: left;
+    padding: 10px 14px;
+    background: #fff;
+    border: none;
+    border-bottom: 1px solid #e0e0e0;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+.mat-dropdown-btn::after {
+    content: '▾';
+    font-size: 16px;
+    color: #888;
+}
+.mat-dropdown-btn:first-child {
+    border-top: 1px solid #e0e0e0;
+}
+.mat-dropdown-content {
+    display: none;
+    padding: 10px 14px;
+    background: #f9f9f9;
+    border-bottom: 1px solid #e0e0e0;
+}
+</style>
+
+<script>
+document.querySelectorAll(".mat-dropdown-btn").forEach(btn => {
+    btn.addEventListener("click", function () {
+        let content = this.nextElementSibling;
+        content.style.display = content.style.display === "block" ? "none" : "block";
+    });
+});
+</script>
+
 {% endblock %}

@@ -715,7 +715,7 @@ def prodman_product_detail(request, pk):
         return redirect('login')
 
     product = Product.objects.get(pk=pk)
-    product_materials = ProductMaterial.objects.filter(product=product).select_related('raw_material')
+    product_materials = list(ProductMaterial.objects.filter(product=product).select_related('raw_material', 'raw_material__material_unit'))
 
     if request.method == "POST":
         action = request.POST.get('action')
@@ -723,7 +723,15 @@ def prodman_product_detail(request, pk):
             new_qty = request.POST.get('quantity')
             if new_qty is not None and new_qty != '':
                 try:
-                    product.quantity = int(new_qty)
+                    new_qty = int(new_qty)
+                    qty_to_add = new_qty - product.quantity
+                    if qty_to_add > 0:
+                        for pm in product_materials:
+                            rm = pm.raw_material
+                            deduction = pm.quantity_per_garment * qty_to_add
+                            rm.material_quantity = max(0, rm.material_quantity - deduction)
+                            rm.save()
+                    product.quantity = new_qty
                     product.save()
                 except ValueError:
                     pass
@@ -746,7 +754,6 @@ def prodman_product_detail(request, pk):
         'raw_materials_json': json.dumps(raw_materials_data, cls=DjangoJSONEncoder),
     })
 
-
 # PRODUCTION EMPLOYEE product detail page
 def prodemp_product_detail(request, pk):
     if not request.session.get('account_id'):
@@ -757,19 +764,16 @@ def prodemp_product_detail(request, pk):
         return redirect('login')
 
     product = Product.objects.get(pk=pk)
-    product_materials = ProductMaterial.objects.filter(product=product).select_related('raw_material')
+    product_materials = list(ProductMaterial.objects.filter(product=product).select_related('raw_material', 'raw_material__material_unit'))
 
     if request.method == "POST":
         add_qty = request.POST.get("add_qty")
-
         if add_qty:
             try:
                 qty_to_add = int(add_qty)
                 if qty_to_add > 0:
                     product.quantity += qty_to_add
                     product.save()
-
-                    # Deduct raw materials for each finished garment added
                     for pm in product_materials:
                         rm = pm.raw_material
                         deduction = pm.quantity_per_garment * qty_to_add
@@ -777,12 +781,18 @@ def prodemp_product_detail(request, pk):
                         rm.save()
             except (ValueError, TypeError):
                 pass
-
         return redirect('prodemp_product_detail', pk=pk)
+
+    fabrics = [pm for pm in product_materials if pm.raw_material.material_category == 'fabrics']
+    trims = [pm for pm in product_materials if pm.raw_material.material_category == 'trims']
+    accessories = [pm for pm in product_materials if pm.raw_material.material_category == 'accessories']
 
     return render(request, 'system_app/prodemp_product_detail.html', {
         'product': product,
         'product_materials': product_materials,
+        'fabrics': fabrics,
+        'trims': trims,
+        'accessories': accessories,
     })
 
 
@@ -841,7 +851,6 @@ def api_raw_materials_with_stock(request):
         })
     return JsonResponse({'materials': data})
 
-
 def api_product_materials(request, pk):
     """GET: list logged materials for a product. POST: add a new material."""
     if not request.session.get('account_id'):
@@ -890,7 +899,6 @@ def api_product_materials(request, pk):
 
         rm = get_object_or_404(RawMaterial, pk=rm_id)
 
-        # Check if already logged for this product
         pm, created = ProductMaterial.objects.get_or_create(
             product=product,
             raw_material=rm,
@@ -902,20 +910,10 @@ def api_product_materials(request, pk):
         )
 
         if not created:
-            # Restore the old quantity before applying the new one
-            old_qty = pm.quantity_per_garment
-            rm.material_quantity += old_qty
             pm.quantity_per_garment = qty
             pm.fabric_length = float(fabric_length) if fabric_length is not None else None
             pm.fabric_width = float(fabric_width) if fabric_width is not None else None
             pm.save()
-
-        # Deduct from raw material inventory
-        if rm.material_quantity < qty:
-            return JsonResponse({'error': 'Insufficient stock in inventory.'}, status=400)
-
-        rm.material_quantity -= qty
-        rm.save()
 
         return JsonResponse({
             'success': True,
@@ -928,6 +926,8 @@ def api_product_materials(request, pk):
             'fabric_length': pm.fabric_length,
             'fabric_width': pm.fabric_width,
         })
+
+    return JsonResponse({'error': 'Method not allowed'}, status=405)
 
 
 def api_product_material_detail(request, pk, pm_pk):
@@ -975,7 +975,6 @@ def api_product_material_detail(request, pk, pm_pk):
         return JsonResponse({'success': True})
 
     return JsonResponse({'error': 'Method not allowed'}, status=405)
-
 
 # order summary for prodman
 def prodman_order_summary(request):
