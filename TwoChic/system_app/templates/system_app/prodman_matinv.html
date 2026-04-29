@@ -9,64 +9,26 @@
   <div class="d-flex align-items-center gap-2 mt-2">
     <form class="flex-grow-1" method="get" action="">
       <input type="hidden" name="category" value="{{ selected_category }}"/>
-
       <div class="input-group inventory-search shadow-sm">
         <span class="input-group-text bg-white border-0 ps-3">
           <span class="material-icons text-muted">search</span>
         </span>
-        <input
-          type="text"
-          class="form-control border-0"
-          name="q"
-          value="{{ q }}"
-          placeholder="Search for Material"
-        />
+        <input type="text" class="form-control border-0" name="q" value="{{ q }}" placeholder="Search for Material"/>
       </div>
     </form>
 
-   <div class="dropdown">
-    <button class="btn btn-light shadow-sm dropdown-toggle"
-            type="button"
-            data-toggle="dropdown"
-            aria-expanded="false">
-
+    <div class="dropdown">
+      <button class="btn btn-light shadow-sm dropdown-toggle" type="button" data-toggle="dropdown" aria-expanded="false">
         <span class="material-icons">tune</span>
-    </button>
-
-    <ul class="dropdown-menu dropdown-menu-left filter-button">
-
-        <li>
-            <a class="dropdown-item"
-               href="?category={{ selected_category }}&q={{ q }}&sort=alpha">
-                Alphabetical (A–Z)
-            </a>
-        </li>
-
-        <li>
-            <a class="dropdown-item"
-               href="?category={{ selected_category }}&q={{ q }}&sort=alpha_desc">
-                Alphabetical (Z–A)
-            </a>
-        </li>
-
+      </button>
+      <ul class="dropdown-menu dropdown-menu-left filter-button">
+        <li><a class="dropdown-item" href="?category={{ selected_category }}&q={{ q }}&sort=alpha">Alphabetical (A–Z)</a></li>
+        <li><a class="dropdown-item" href="?category={{ selected_category }}&q={{ q }}&sort=alpha_desc">Alphabetical (Z–A)</a></li>
         <li><hr class="dropdown-divider"></li>
-
-        <li>
-            <a class="dropdown-item"
-               href="?category={{ selected_category }}&q={{ q }}&sort=highest">
-                Highest Quantity
-            </a>
-        </li>
-
-        <li>
-            <a class="dropdown-item"
-               href="?category={{ selected_category }}&q={{ q }}&sort=lowest">
-                Lowest Quantity
-            </a>
-        </li>
-
-    </ul>
-  </div>
+        <li><a class="dropdown-item" href="?category={{ selected_category }}&q={{ q }}&sort=highest">Highest Quantity</a></li>
+        <li><a class="dropdown-item" href="?category={{ selected_category }}&q={{ q }}&sort=lowest">Lowest Quantity</a></li>
+      </ul>
+    </div>
   </div>
 
   <!-- Inventory Timestamp -->
@@ -79,77 +41,73 @@
   <!-- Buttons -->
   <div class="d-flex flex-column align-items-center gap-3 mb-4">
 
-    <!-- LOG BUTTON -->
     <button type="button"
       class="btn log-btn shadow-sm d-flex align-items-center justify-content-between mb-2"
       data-bs-toggle="modal"
       data-bs-target="#logMaterialModal"
       style="background-color: #A1C2EA">
-
       <span class="fw-semibold">Log New Raw Material</span>
       <span class="material-icons">add_circle</span>
     </button>
 
-    <a href="#" 
-      class="btn text-dark"
-      style='background-color: #F0F0F0'>
-      Generate Order List
-    </a>
+    <button type="button"
+      class="btn text-dark d-flex align-items-center justify-content-between"
+      style="background-color: #F0F0F0; width: 100%; max-width: 360px;"
+      data-bs-toggle="modal"
+      data-bs-target="#criticalModal">
+      <span class="fw-semibold">Critical Quantity</span>
+      <span class="badge rounded-pill" style="background:#e05a5a; color:#fff;">{{ critical_count }}</span>
+    </button>
+
   </div>
 
   <!-- Category Panel -->
   <div class="category-panel shadow-sm">
-
     <div class="category-title">Select Category</div>
-
     <form method="get" action="">
       <input type="hidden" name="q" value="{{ q }}"/>
-
       <div class="category-select-wrap">
-        <select class="form-select category-select"
-                name="category"
-                onchange="this.form.submit()">
-
+        <select class="form-select category-select" name="category" onchange="this.form.submit()">
           {% for val, label in category_choices %}
-            <option value="{{ val }}"
-              {% if selected_category == val %}selected{% endif %}>
-              {{ label }}
-            </option>
+            <option value="{{ val }}" {% if selected_category == val %}selected{% endif %}>{{ label }}</option>
           {% endfor %}
         </select>
       </div>
     </form>
 
-    <!-- Inventory Table -->
     <div class="table-responsive mt-3">
       <table class="table inventory-table mb-0">
         <thead>
           <tr>
             <th>Material</th>
             <th class="text-center">Qty.</th>
+            <th class="text-center">Min. Threshold</th>
             <th class="text-center">Unit Price</th>
             <th class="text-center">Action</th>
           </tr>
         </thead>
         <tbody>
           {% for m in materials %}
-            <tr>
-              <td>{{ m.material_name }}</td>
+            <tr {% if m.minimum_threshold > 0 and m.material_quantity <= m.minimum_threshold %}style="background:#fff5f5;"{% endif %}>
+              <td>
+                {{ m.material_name }}
+                {% if m.minimum_threshold > 0 and m.material_quantity <= m.minimum_threshold %}
+                  <span class="material-icons align-middle" style="font-size:14px; color:#e05a5a;" title="Critical">warning</span>
+                {% endif %}
+              </td>
               <td class="text-center">{{ m.material_quantity }}</td>
+              <td class="text-center">{{ m.minimum_threshold }}</td>
               <td class="text-center">₱{{ m.material_unitprice|floatformat:0 }}</td>
               <td class="text-center">
                 <a href="?edit={{ m.id }}&category={{ selected_category }}&q={{ q }}&sort={{ sort }}"
-                  class="text-decoration-none edit-action"
-                  data-edit-id="{{ m.id }}">
+                  class="text-decoration-none edit-action" data-edit-id="{{ m.id }}">
                   <span class="material-icons">menu</span>
                 </a>
               </td>
             </tr>
           {% empty %}
             <tr>
-              <td colspan="5" class="text-center py-4 text-muted">
-                No materials found.
-              </td>
+              <td colspan="5" class="text-center py-4 text-muted">No materials found.</td>
             </tr>
           {% endfor %}
         </tbody>
@@ -159,172 +117,162 @@
 </div>
 
 
-<!-- ============================= -->
+<!-- CRITICAL MATERIALS MODAL -->
+<div class="modal fade" id="criticalModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content" style="border-radius:16px; overflow:hidden;">
+      <div style="background:#eaa2a1; padding:14px 18px; display:flex; justify-content:space-between; align-items:center;">
+        <span style="font-size:15px; font-weight:600; color:#5a1a1a;">Critical Materials</span>
+        <button type="button" data-bs-dismiss="modal" style="border:none; background:none; font-size:20px; color:#5a1a1a;">&times;</button>
+      </div>
+      <div class="modal-body p-3">
+        {% if critical_materials %}
+        <table class="table table-sm" style="font-size:13px;">
+          <thead>
+            <tr>
+              <th>Material</th>
+              <th class="text-center">Current Qty</th>
+              <th class="text-center">Min. Threshold</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for m in critical_materials %}
+            <tr>
+              <td>{{ m.material_name }}</td>
+              <td class="text-center" style="color:#e05a5a; font-weight:600;">{{ m.material_quantity }}</td>
+              <td class="text-center">{{ m.minimum_threshold }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+        {% else %}
+        <p class="text-muted text-center" style="font-size:13px;">No critical materials. All stocks are above their minimum threshold.</p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+
 <!-- LOG RAW MATERIAL MODAL -->
-<!-- ============================= -->
 <div class="modal fade" id="logMaterialModal" tabindex="-1">
   <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content custom-modal">
-
       <div class="modal-body p-4">
-
         <form method="POST" action="">
           {% csrf_token %}
-
           <div class="mb-3">
             <label class="form-label fw-semibold">Category:</label>
             {{ form.material_category }}
             {% if form.material_category.errors %}<div class="invalid-feedback d-block">{{ form.material_category.errors.0 }}</div>{% endif %}
           </div>
-
           <div class="mb-3">
             <label class="form-label fw-semibold">Material Name:</label>
             {{ form.material_name }}
             {% if form.material_name.errors %}<div class="invalid-feedback d-block">{{ form.material_name.errors.0 }}</div>{% endif %}
           </div>
-
           <div class="mb-3">
             <label class="form-label fw-semibold">Unit:</label>
             {{ form.material_unit }}
             {% if form.material_unit.errors %}<div class="invalid-feedback d-block">{{ form.material_unit.errors.0 }}</div>{% endif %}
           </div>
-
           <div class="mb-3">
             <label class="form-label fw-semibold">Quantity:</label>
             {{ form.material_quantity }}
             {% if form.material_quantity.errors %}<div class="invalid-feedback d-block">{{ form.material_quantity.errors.0 }}</div>{% endif %}
           </div>
-
           <div class="mb-3">
             <label class="form-label fw-semibold">Unit Price:</label>
             {{ form.material_unitprice }}
             {% if form.material_unitprice.errors %}<div class="invalid-feedback d-block">{{ form.material_unitprice.errors.0 }}</div>{% endif %}
           </div>
-
-          <div class="d-flex justify-content-end mt-4">
-              <button type="button"
-                      class="btn cancel-btn me-3"
-                      data-bs-dismiss="modal">
-                  Cancel
-              </button>
-
-              <button type="submit"
-                      class="btn add-btn">
-                  Add
-              </button>
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Minimum Threshold:</label>
+            {{ form.minimum_threshold }}
+            {% if form.minimum_threshold.errors %}<div class="invalid-feedback d-block">{{ form.minimum_threshold.errors.0 }}</div>{% endif %}
           </div>
-
+          <div class="d-flex justify-content-end mt-4">
+            <button type="button" class="btn cancel-btn me-3" data-bs-dismiss="modal">Cancel</button>
+            <button type="submit" class="btn add-btn">Add</button>
+          </div>
         </form>
-
       </div>
     </div>
   </div>
 </div>
 
-{% comment %} EDIT MATERIAL MODAL {% endcomment %}
+
+<!-- EDIT MATERIAL MODAL -->
 <div class="modal fade" id="editMaterialModal" tabindex="-1">
   <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content custom-modal">
       <div class="modal-body p-4">
-
         <h5 class="fw-bold mb-3">Edit Raw Material</h5>
-
-        <!-- ===================== -->
-        <!-- EDIT FORM -->
-        <!-- ===================== -->
         {% if edit_target %}
-        <form id="editForm"
-              method="POST"
+        <form id="editForm" method="POST"
               action="{% url 'edit_raw_material' edit_target.id %}?category={{ selected_category }}&q={{ q }}&sort={{ sort }}">
-
           {% csrf_token %}
-
           <div class="mb-3">
             <label class="form-label fw-semibold">Category:</label>
             {{ edit_form.material_category }}
           </div>
-
           <div class="mb-3">
             <label class="form-label fw-semibold">Material Name:</label>
             {{ edit_form.material_name }}
           </div>
-
           <div class="mb-3">
             <label class="form-label fw-semibold">Unit:</label>
             {{ edit_form.material_unit }}
           </div>
-
           <div class="mb-3">
             <label class="form-label fw-semibold">Quantity:</label>
             {{ edit_form.material_quantity }}
           </div>
-
           <div class="mb-3">
             <label class="form-label fw-semibold">Unit Price:</label>
             {{ edit_form.material_unitprice }}
           </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Minimum Threshold:</label>
+            {{ edit_form.minimum_threshold }}
+          </div>
         </form>
         {% endif %}
 
-        <!-- ===================== -->
-        <!-- BUTTON ROW -->
-        <!-- ===================== -->
         <div class="modal-actions">
-
-          <!-- Cancel -->
-<a href="?category={{ selected_category }}&q={{ q }}&sort={{ sort }}" class="btn cancel-btn" style="text-decoration: none;">
-    Cancel
-</a>
-
-          <!-- Delete Form -->
+          <a href="?category={{ selected_category }}&q={{ q }}&sort={{ sort }}" class="btn cancel-btn" style="text-decoration: none;">Cancel</a>
           {% if edit_target %}
           <form method="POST"
                 action="{% url 'delete_raw_material' edit_target.id %}?category={{ selected_category }}&q={{ q }}&sort={{ sort }}"
                 class="d-inline">
             {% csrf_token %}
-            <button type="submit" class="btn delete-btn">
-              Delete
-            </button>
+            <button type="submit" class="btn delete-btn">Delete</button>
           </form>
-
-          <!-- Save -->
-          <button type="submit"
-                  form="editForm"
-                  class="btn add-btn">
-            Save
-          </button>
+          <button type="submit" form="editForm" class="btn add-btn">Save</button>
           {% endif %}
-
+        </div>
       </div>
     </div>
   </div>
 </div>
 
-<!-- ============================= -->
-<!-- JS FOR UNIT FILTERING -->
-<!-- ============================= -->
 
 <script>
   const UNITS_BY_CATEGORY = JSON.parse('{{ units_by_category_json|escapejs }}');
-
   const categorySelect = document.getElementById("id_material_category");
   const unitSelect = document.getElementById("id_material_unit");
 
   function refreshUnits() {
     if (!categorySelect || !unitSelect) return;
-
     const cat = categorySelect.value;
     const units = UNITS_BY_CATEGORY[cat] || [];
-
     unitSelect.innerHTML = "";
-
     const placeholder = document.createElement("option");
     placeholder.value = "";
     placeholder.textContent = "Choose Unit";
     placeholder.selected = true;
     placeholder.disabled = true;
     unitSelect.appendChild(placeholder);
-
     units.forEach(u => {
       const opt = document.createElement("option");
       opt.value = u.id;
@@ -339,7 +287,6 @@
   }
 </script>
 
-<!-- Open edit modal on page load if edit parameter exists -->
 <script>
   document.addEventListener("DOMContentLoaded", function () {
     const urlParams = new URLSearchParams(window.location.search);
@@ -352,7 +299,6 @@
   });
 </script>
 
-<!-- Auto reopen modal if form has errors -->
 {% if form.errors %}
 <script>
   const modal = new bootstrap.Modal(document.getElementById('logMaterialModal'));

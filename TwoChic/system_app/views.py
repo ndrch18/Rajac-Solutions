@@ -7,6 +7,8 @@ from .models import MaterialUnit, Employee, EmployeeRole
 import random
 from .models import Product, ProductCategory, ProductCollection, ProductMaterial, Order, OrderItem  # ✅ FIX: Added OrderItem import
 
+from django.db import models as db_models
+
 import json
 from django.core.serializers.json import DjangoJSONEncoder
 from datetime import datetime
@@ -232,24 +234,19 @@ def prodman_matinv(request):
 
     if request.method == "POST":
         form = RawMaterialForm(request.POST)
-
         if form.is_valid():
             obj = form.save(commit=False)
             obj.full_clean()
             obj.save()
-
             params = {}
             if category:
                 params["category"] = category
             if q:
                 params["q"] = q
-
             url = reverse("prodman_matinv")
             if params:
                 url = f"{url}?{urlencode(params)}"
-
             return redirect(url)
-
     else:
         form = RawMaterialForm()
 
@@ -280,6 +277,12 @@ def prodman_matinv(request):
             edit_target = None
             edit_form = None
 
+    # Critical materials — quantity at or below minimum threshold
+    critical_materials = RawMaterial.objects.filter(
+        material_quantity__lte=db_models.F('minimum_threshold'),
+        minimum_threshold__gt=0
+    ).order_by('material_name')
+
     context = {
         "materials": qs,
         "selected_category": category,
@@ -297,6 +300,8 @@ def prodman_matinv(request):
         "edit_target": edit_target,
         "edit_form": edit_form,
         "open_edit": bool(edit_target),
+        "critical_materials": critical_materials,
+        "critical_count": critical_materials.count(),
     }
 
     return render(request, "system_app/prodman_matinv.html", context)

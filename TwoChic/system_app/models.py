@@ -47,6 +47,11 @@ class RawMaterial(models.Model):
         validators=[MinValueValidator(0.0)]
     )
 
+    minimum_threshold = models.FloatField(
+    default=0,
+    validators=[MinValueValidator(0.0)]
+    )
+
     def clean(self):
         if self.material_unit.category != self.material_category:
             raise ValidationError("Selected unit does not match material category.")
