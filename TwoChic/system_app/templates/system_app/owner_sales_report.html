@@ -7,7 +7,18 @@
             <h5 class="mb-2">Sales & Expenses Report</h5>
             <p class="text-muted mb-0">Overview of completed sales, expense estimates, and top products sold.</p>
         </div>
-        <a href="{% url 'owner_homepage' %}" class="btn btn-outline-secondary">Back to dashboard</a>
+        <div class="d-flex gap-2">
+   <a href="{% url 'export_sales_xlsx' %}" class="btn btn-sm"
+        style="background:#92d193; color:#000; border:none; border-radius:8px; padding:6px 14px;">
+        <span class="material-icons align-middle" style="font-size:16px;">download</span>
+        Export Excel
+    </a>
+    <a href="{% url 'export_sales_pdf' %}" class="btn btn-sm"
+        style="background:#eaa2a1; color:#000; border:none; border-radius:8px; padding:6px 14px;">
+        <span class="material-icons align-middle" style="font-size:16px;">picture_as_pdf</span>
+        Export PDF
+    </a>
+</div>
     </div>
 
     <div class="row g-3">

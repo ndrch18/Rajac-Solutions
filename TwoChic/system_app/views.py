@@ -13,7 +13,7 @@ from datetime import datetime
 from calendar import month_abbr
 from django.urls import reverse
 from urllib.parse import urlencode
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse
 from django.views.decorators.http import require_POST
 
 #Global variable for login authentication
@@ -669,6 +669,27 @@ def owner_product_detail(request, pk):
     product = Product.objects.get(pk=pk)
     product_materials = ProductMaterial.objects.filter(product=product).select_related('raw_material')
 
+    # ✅ ADD THIS BLOCK (make sure spacing is EXACT)
+    materials_breakdown = []
+    total_cost = 0
+
+    for pm in product_materials:
+        rm = pm.raw_material
+        unit_price = rm.material_unitprice or 0
+        qty = pm.quantity_per_garment or 0
+
+        subtotal = unit_price * qty
+        total_cost += subtotal
+
+        materials_breakdown.append({
+            'name': rm.material_name,
+            'category': rm.material_category,
+            'unit': rm.material_unit.unit_name,
+            'qty': qty,
+            'unit_price': unit_price,
+            'subtotal': subtotal,
+        })
+
     if request.method == "POST":
         price = request.POST.get("price")
         if price:
@@ -679,6 +700,8 @@ def owner_product_detail(request, pk):
     return render(request, 'system_app/owner_product_detail.html', {
         'product': product,
         'product_materials': product_materials,
+        'materials_breakdown': materials_breakdown,
+        'total_cost': total_cost,
     })
 
 
@@ -1016,3 +1039,117 @@ def prodman_order_summary(request):
     return render(request, 'system_app/prodman_order_summary.html', {
         'order_items': order_items
     })
+
+import openpyxl
+from openpyxl.styles import Font, PatternFill, Alignment
+from reportlab.lib.pagesizes import A4
+from reportlab.lib import colors
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+from reportlab.lib.styles import getSampleStyleSheet
+from reportlab.lib.units import cm
+
+def export_sales_xlsx(request):
+    if not request.session.get('account_id'):
+        return redirect('login')
+
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "Sales Report"
+
+    # Header row styling
+    header_fill = PatternFill(start_color="C6E8ED", end_color="C6E8ED", fill_type="solid")
+    header_font = Font(bold=True)
+
+    headers = ['Order ID', 'Date', 'Product', 'Quantity', 'Unit Price (₱)', 'Subtotal (₱)']
+    for col, header in enumerate(headers, 1):
+        cell = ws.cell(row=1, column=col, value=header)
+        cell.font = header_font
+        cell.fill = header_fill
+        cell.alignment = Alignment(horizontal='center')
+
+    # Data rows
+    row_num = 2
+    total = 0
+    for item in OrderItem.objects.select_related('order', 'product').order_by('-order__created_at'):
+        subtotal = round(item.quantity * item.product.price, 2)
+        total += subtotal
+        ws.append([
+            f'#{item.order.id}',
+            item.order.created_at.strftime('%Y-%m-%d %H:%M'),
+            item.product.product_name,
+            item.quantity,
+            item.product.price,
+            subtotal,
+        ])
+        row_num += 1
+
+    # Total row
+    ws.append([])
+    total_row = row_num + 1
+    ws.cell(row=total_row, column=5, value='TOTAL').font = Font(bold=True)
+    ws.cell(row=total_row, column=6, value=round(total, 2)).font = Font(bold=True)
+
+    # Column widths
+    ws.column_dimensions['A'].width = 12
+    ws.column_dimensions['B'].width = 20
+    ws.column_dimensions['C'].width = 30
+    ws.column_dimensions['D'].width = 12
+    ws.column_dimensions['E'].width = 18
+    ws.column_dimensions['F'].width = 18
+
+    response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    response['Content-Disposition'] = 'attachment; filename="sales_report.xlsx"'
+    wb.save(response)
+    return response
+
+
+def export_sales_pdf(request):
+    if not request.session.get('account_id'):
+        return redirect('login')
+
+    response = HttpResponse(content_type='application/pdf')
+    response['Content-Disposition'] = 'attachment; filename="sales_report.pdf"'
+
+    doc = SimpleDocTemplate(response, pagesize=A4, topMargin=1.5*cm, bottomMargin=1.5*cm)
+    styles = getSampleStyleSheet()
+    elements = []
+
+    # Title
+    title = Paragraph("<b>Two Chic Manila — Sales Report</b>", styles['Title'])
+    elements.append(title)
+    elements.append(Spacer(1, 0.5*cm))
+
+    # Table data
+    data = [['Order ID', 'Date', 'Product', 'Qty', 'Unit Price', 'Subtotal']]
+    total = 0
+
+    for item in OrderItem.objects.select_related('order', 'product').order_by('-order__created_at'):
+        subtotal = round(item.quantity * item.product.price, 2)
+        total += subtotal
+        data.append([
+            f'#{item.order.id}',
+            item.order.created_at.strftime('%Y-%m-%d %H:%M'),
+            item.product.product_name,
+            str(item.quantity),
+            f'P{item.product.price:,.2f}',
+            f'P{subtotal:,.2f}',
+        ])
+
+    # Total row
+    data.append(['', '', '', '', 'TOTAL', f'P{round(total, 2):,.2f}'])
+
+    table = Table(data, colWidths=[2*cm, 4*cm, 6*cm, 1.5*cm, 3*cm, 3*cm])
+    table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#C6E8ED')),
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('FONTSIZE', (0, 0), (-1, -1), 9),
+        ('GRID', (0, 0), (-1, -2), 0.5, colors.HexColor('#dddddd')),
+        ('ROWBACKGROUNDS', (0, 1), (-1, -2), [colors.white, colors.HexColor('#f5f5f5')]),
+        ('FONTNAME', (0, -1), (-1, -1), 'Helvetica-Bold'),
+        ('LINEABOVE', (0, -1), (-1, -1), 1, colors.black),
+        ('ALIGN', (3, 0), (-1, -1), 'RIGHT'),
+    ]))
+    elements.append(table)
+
+    doc.build(elements)
+    return response

@@ -43,4 +43,7 @@ urlpatterns = [
     # API endpoints for product materials
     path('api/products/<int:pk>/materials/', views.api_product_materials, name='api_product_materials'),
     path('api/products/<int:pk>/materials/<int:pm_pk>/', views.api_product_material_detail, name='api_product_material_detail'),
+
+    path('owner/sales-report/export/xlsx/', views.export_sales_xlsx, name='export_sales_xlsx'),
+    path('owner/sales-report/export/pdf/', views.export_sales_pdf, name='export_sales_pdf'),
 ]

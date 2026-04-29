@@ -15,8 +15,9 @@
     <div class="card shadow-sm p-4" style="border-radius:12px;">
 
         <!-- IMAGE -->
-        <div style="width:100%; height:180px; background:#e8edf2; border-radius:12px;
-        display:flex; align-items:center; justify-content:center;" class="mb-4">
+        <div class="mb-4"
+             style="width:100%; height:180px; background:#e8edf2; border-radius:12px;
+                    display:flex; align-items:center; justify-content:center;">
             <span class="material-icons text-muted" style="font-size:60px;">inventory_2</span>
         </div>
 
@@ -28,32 +29,24 @@
         <p><strong>Collection:</strong> {{ product.get_product_collection_display }}</p>
         <p><strong>Price:</strong> ₱{{ product.price }}</p>
 
-        <!-- MATERIALS PER GARMENT (read-only) -->
-        {% if product_materials %}
-        <div class="mt-3">
-            <p class="fw-600 mb-2" style="font-size:14px; color:#444;">Materials per Garment</p>
-            {% for pm in product_materials %}
-            <div style="background:#f4f7fa; border-radius:10px; padding:10px 12px; margin-bottom:8px;">
-                <p class="mb-0 fw-600" style="font-size:13px;">{{ pm.raw_material.material_name }}</p>
-                <p class="mb-0 text-muted" style="font-size:11px;">
-                    {{ pm.raw_material.get_material_category_display }} ·
-                    {% if pm.raw_material.material_category == 'fabrics' and pm.fabric_length %}
-                        {{ pm.fabric_length }} × {{ pm.fabric_width }} {{ pm.raw_material.material_unit.unit_name }} per garment
-                    {% else %}
-                        {{ pm.quantity_per_garment }} {{ pm.raw_material.material_unit.unit_name }} per garment
-                    {% endif %}
-                </p>
-            </div>
-            {% endfor %}
-        </div>
-        {% endif %}
+        <!-- VIEW MATERIALS BUTTON -->
+        <button class="btn btn-sm"
+                style="background:#C6E8ED; color:#2e7d84; border:none; border-radius:8px; padding:8px 16px;"
+                data-bs-toggle="modal" data-bs-target="#materialsModal">
+            View Materials Cost Breakdowwn
+        </button>
+
 
         <!-- ACTION BUTTONS -->
         <div class="mt-4 d-flex gap-2">
-            <a href="{% url 'owner_edit_product' product.id %}" class="btn btn-info btn-sm px-3">Edit</a>
+            <a href="{% url 'owner_edit_product' product.id %}" class="btn btn-info btn-sm px-3">
+                Edit
+            </a>
+
             <form action="{% url 'owner_delete_product' product.id %}" method="POST" class="m-0">
                 {% csrf_token %}
-                <button type="submit" class="btn btn-danger btn-sm px-3"
+                <button type="submit"
+                        class="btn btn-danger btn-sm px-3"
                         onclick="return confirm('Are you sure you want to delete this product?');">
                     Delete
                 </button>
@@ -62,4 +55,195 @@
 
     </div>
 </div>
+
+<!-- MATERIALS MODAL -->
+<div class="modal fade" id="materialsModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content" style="border-radius:16px; overflow:hidden;">
+
+      <!-- Header -->
+      <div style="background:#C6E8ED; padding:14px 18px; display:flex; justify-content:space-between; align-items:center;">
+        <span class="fw-600" style="font-size:15px; color:#1a5c63;">Materials Costing</span>
+        <button type="button" data-bs-dismiss="modal" style="border:none; background:none; font-size:20px; color:#2e7d84;">&times;</button>
+      </div>
+
+      <div class="modal-body p-0">
+
+        <!-- Product Summary -->
+        <div class="d-flex align-items-center gap-3 p-3" style="border-bottom:1px solid #eee;">
+          <div style="width:70px; height:70px; background:#e8edf2; border-radius:10px; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+            <span class="material-icons text-muted">inventory_2</span>
+          </div>
+          <div style="font-size:13px;">
+            <p class="mb-1 fw-600">{{ product.product_name }}</p>
+            <p class="mb-0 text-muted">Stock: <span>{{ product.quantity }}</span></p>
+            <p class="mb-0 text-muted">Category: <span>{{ product.get_product_category_display }}</span></p>
+            <p class="mb-0 text-muted">Collection: <span>{{ product.get_product_collection_display }}</span></p>
+          </div>
+        </div>
+
+        <div class="p-3" style="font-size:13px;">
+
+          <!-- Total Materials Costing -->
+          <div class="d-flex justify-content-between align-items-center py-2" style="border-bottom:1px solid #eee;">
+            <div class="d-flex align-items-center gap-2">
+              <span class="fw-600">Total Materials Costing</span>
+              <button onclick="toggleDetails()" style="font-size:11px; padding:2px 10px; border-radius:20px; border:1px solid #ccc; background:#fff; cursor:pointer;">View Details</button>
+            </div>
+            <span class="fw-600">₱ {{ total_cost }}</span>
+          </div>
+
+          <!-- Dropdown Details (hidden by default) -->
+          <div id="materialsDetails" style="display:none; background:#f9f9f9; border-radius:8px; margin:8px 0; padding:8px 12px;">
+            <div>
+  <button class="dropdown-btn">Fabrics</button>
+  <div class="dropdown-content">
+    {% for m in materials_breakdown %}
+      {% if m.category == "fabrics" %}
+      <p class="mb-1">{{ m.name }} — {{ m.qty }} {{ m.unit }} × ₱{{ m.unit_price }} = ₱{{ m.subtotal }}</p>
+      {% endif %}
+    {% endfor %}
+  </div>
+</div>
+<div>
+  <button class="dropdown-btn">Trims</button>
+  <div class="dropdown-content">
+    {% for m in materials_breakdown %}
+      {% if m.category == "trims" %}
+      <p class="mb-1">{{ m.name }} — {{ m.qty }} {{ m.unit }} × ₱{{ m.unit_price }} = ₱{{ m.subtotal }}</p>
+      {% endif %}
+    {% endfor %}
+  </div>
+</div>
+<div>
+  <button class="dropdown-btn">Accessories</button>
+  <div class="dropdown-content">
+    {% for m in materials_breakdown %}
+      {% if m.category == "accessories" %}
+      <p class="mb-1">{{ m.name }} — {{ m.qty }} {{ m.unit }} × ₱{{ m.unit_price }} = ₱{{ m.subtotal }}</p>
+      {% endif %}
+    {% endfor %}
+  </div>
+</div>
+          </div>
+
+          <!-- Total Garments Made -->
+          <div class="d-flex justify-content-between align-items-center py-2" style="border-bottom:1px solid #eee;">
+            <span class="fw-600">Total Garments Made</span>
+            <span>{{ product.quantity }} Garments</span>
+          </div>
+
+          <!-- Target Profit Margin -->
+          <div class="d-flex justify-content-between align-items-center py-2" style="border-bottom:1px solid #eee;">
+            <span class="fw-600">Target Profit Margin</span>
+            <div class="d-flex align-items-center gap-1">
+              <input type="number" id="profitMargin" value="50" min="0" max="999"
+                     style="width:60px; border:1px solid #ddd; border-radius:6px; padding:3px 6px; font-size:13px; text-align:right;">
+              <span>%</span>
+            </div>
+          </div>
+
+          <!-- Formula -->
+          <div class="py-2" style="border-bottom:1px solid #eee; color:#888; font-size:11px;">
+            <span class="fw-600" style="color:#555;">Formula:</span>
+            <span style="margin-left:8px;">Total Material Costing / Total Garments Made + Total Profit Margin</span>
+          </div>
+
+        <div class="d-flex justify-content-between align-items-center py-2" style="border-bottom:1px solid #eee;">
+            <span class="fw-600">Suggested Retail Price <span style="font-size:11px; color:#888;">(per garment)</span></span>
+            <span id="suggestedPrice" class="fw-600">₱ <span id="suggestedVal">—</span></span>
+        </div>
+
+          <!-- Retail Price Input -->
+          <div class="py-2">
+            <p class="mb-1 fw-600">Retail Price:</p>
+            <input type="number" id="retailPriceInput" placeholder="Enter Retail Price"
+                   value="{{ product.price }}"
+                   style="width:100%; border:1px solid #ddd; border-radius:8px; padding:8px 12px; font-size:13px;">
+          </div>
+
+          <!-- Action Buttons -->
+          <div class="d-flex gap-2 mt-2">
+            <button data-bs-dismiss="modal" style="flex:1; padding:10px; border-radius:8px; border:none; background:#b8babb; font-weight:600; font-size:13px; cursor:pointer;">Cancel</button>
+            <button onclick="deleteProduct()" style="flex:1; padding:10px; border-radius:8px; border:none; background:#eaa2a1; font-weight:600; font-size:13px; cursor:pointer;">Delete</button>
+            <button onclick="savePrice()" style="flex:1; padding:10px; border-radius:8px; border:none; background:#92d193; font-weight:600; font-size:13px; cursor:pointer;">Save</button>
+          </div>
+
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<style>
+.dropdown-btn {
+    width: 100%;
+    text-align: left;
+    padding: 8px 4px;
+    background: #f9f9f9;
+    border: none;
+    border-bottom: 1px solid #e0e0e0;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 13px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+.dropdown-btn::after {
+    content: '▾';
+    font-size: 14px;
+    color: #888;
+}
+.dropdown-content {
+    display: none;
+    padding: 8px 4px;
+    font-size: 12px;
+    color: #555;
+    border-bottom: 1px solid #e0e0e0;
+}
+</style>
+
+<script>
+const TOTAL_COST = {{ total_cost }};
+const TOTAL_QTY = {{ product.quantity }};
+
+function toggleDetails() {
+    const d = document.getElementById('materialsDetails');
+    d.style.display = d.style.display === 'none' ? 'block' : 'none';
+}
+
+
+function savePrice() {
+    const price = document.getElementById('retailPriceInput').value;
+    fetch('', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/x-www-form-urlencoded', 'X-CSRFToken': '{{ csrf_token }}'},
+        body: `price=${price}`
+    }).then(() => location.reload());
+}
+
+function deleteProduct() {
+    if (confirm('Are you sure you want to delete this product?')) {
+        fetch("{% url 'owner_delete_product' product.id %}", {
+            method: 'POST',
+            headers: {'X-CSRFToken': '{{ csrf_token }}'}
+        }).then(() => window.location.href = "{% url 'owner_products_list' %}");
+    }
+}
+
+function computeSuggested() {
+    const margin = parseFloat(document.getElementById('profitMargin').value) || 0;
+    const suggested = TOTAL_COST * (1 + margin / 100);
+    document.getElementById('suggestedVal').textContent = suggested.toFixed(2);
+}
+computeSuggested();
+document.querySelectorAll(".dropdown-btn").forEach(btn => {
+    btn.addEventListener("click", function () {
+        let content = this.nextElementSibling;
+        content.style.display = content.style.display === "block" ? "none" : "block";
+    });
+});
+</script>
 {% endblock %}
