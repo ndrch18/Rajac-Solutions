@@ -137,11 +137,6 @@
                     <input type="number" id="addFabricLength" min="0" step="any" placeholder="e.g. 1.5" class="custom-input" style="font-size:13px;"
                            oninput="sanitizeNumber(this); computeAddFabricQty()">
                 </div>
-                <div class="mb-2">
-                    <label id="addWidthLabel" style="font-size:12px; color:#555; font-weight:600; margin-bottom:4px; display:block;">Width</label>
-                    <input type="number" id="addFabricWidth" min="0" step="any" placeholder="e.g. 0.8" class="custom-input" style="font-size:13px;"
-                           oninput="sanitizeNumber(this); computeAddFabricQty()">
-                </div>
                 <p id="addFabricPreview" style="font-size:12px; color:#777;"></p>
             </div>
             <div id="addSingleInput" class="d-none">
@@ -186,11 +181,6 @@
             <div class="mb-2">
                 <label id="editLengthLabel" style="font-size:12px; color:#555; font-weight:600; margin-bottom:4px; display:block;">Length</label>
                 <input type="number" id="editFabricLength" min="0" step="any" class="custom-input" style="font-size:13px;"
-                       oninput="sanitizeNumber(this); computeEditFabricQty()">
-            </div>
-            <div class="mb-2">
-                <label id="editWidthLabel" style="font-size:12px; color:#555; font-weight:600; margin-bottom:4px; display:block;">Width</label>
-                <input type="number" id="editFabricWidth" min="0" step="any" class="custom-input" style="font-size:13px;"
                        oninput="sanitizeNumber(this); computeEditFabricQty()">
             </div>
             <p id="editFabricPreview" style="font-size:12px; color:#777;"></p>
@@ -282,7 +272,7 @@ function renderMats() {
     }
     loggedMats.forEach(pm => {
         let qStr = pm.category === 'fabrics' && pm.fabric_length != null
-            ? `${pm.fabric_length} × ${pm.fabric_width} ${pm.unit}`
+            ? `${pm.fabric_length} ${pm.unit}`
             : `${pm.quantity_per_garment} ${pm.unit}`;
         const div = document.createElement('div');
         div.style.cssText = 'background:#f4f7fa;border-radius:10px;padding:10px 12px;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;';
@@ -374,9 +364,7 @@ function showAddQty(rm) {
         document.getElementById('addFabricInputs').classList.remove('d-none');
         document.getElementById('addSingleInput').classList.add('d-none');
         document.getElementById('addLengthLabel').textContent = `Length (${rm.unit})`;
-        document.getElementById('addWidthLabel').textContent = `Width (${rm.unit})`;
         document.getElementById('addFabricLength').value = '';
-        document.getElementById('addFabricWidth').value = '';
         document.getElementById('addFabricPreview').textContent = '';
     } else {
         document.getElementById('addSingleInput').classList.remove('d-none');
@@ -388,10 +376,9 @@ function showAddQty(rm) {
 
 function computeAddFabricQty() {
     const l = parseFloat(document.getElementById('addFabricLength').value);
-    const w = parseFloat(document.getElementById('addFabricWidth').value);
     const u = selMat ? selMat.unit : '';
     document.getElementById('addFabricPreview').textContent =
-        (!isNaN(l) && !isNaN(w) && l > 0 && w > 0) ? `Area: ${(l * w).toFixed(4)} ${u}²` : '';
+        (!isNaN(l) && l > 0) ? `Length: ${l} ${u}` : '';
 }
 
 function sanitizeNumber(inp) {
@@ -404,12 +391,11 @@ function sanitizeNumber(inp) {
 async function submitAdd() {
     document.getElementById('addError').style.display = 'none';
     if (!selMat) { showErr('addError', 'Please select a material.'); return; }
-    let qty, fl = null, fw = null;
-    if (selMat.category === 'fabrics') {
-        fl = parseFloat(document.getElementById('addFabricLength').value);
-        fw = parseFloat(document.getElementById('addFabricWidth').value);
-        if (!fl || !fw || fl <= 0 || fw <= 0) { showErr('addError', 'Enter valid length and width (positive numbers only).'); return; }
-        qty = fl * fw;
+        let qty, fl = null, fw = null;
+        if (selMat.category === 'fabrics') {
+            fl = parseFloat(document.getElementById('addFabricLength').value);
+            if (!fl || fl <= 0) { showErr('addError', 'Enter a valid length (positive number only).'); return; }
+            qty = fl;
     } else {
         qty = parseFloat(document.getElementById('addSingleQty').value);
         if (!qty || qty <= 0) { showErr('addError', 'Enter a valid quantity (positive number only).'); return; }
@@ -448,9 +434,7 @@ function openEdit(pmId) {
         document.getElementById('editFabricInputs').classList.remove('d-none');
         document.getElementById('editSingleInput').classList.add('d-none');
         document.getElementById('editLengthLabel').textContent = `Length (${pm.unit})`;
-        document.getElementById('editWidthLabel').textContent = `Width (${pm.unit})`;
         document.getElementById('editFabricLength').value = pm.fabric_length ?? '';
-        document.getElementById('editFabricWidth').value = pm.fabric_width ?? '';
         computeEditFabricQty();
     } else {
         document.getElementById('editSingleInput').classList.remove('d-none');
@@ -467,10 +451,9 @@ function closeEditPanel() {
 
 function computeEditFabricQty() {
     const l = parseFloat(document.getElementById('editFabricLength').value);
-    const w = parseFloat(document.getElementById('editFabricWidth').value);
     const u = document.getElementById('editUnitVal').value;
     document.getElementById('editFabricPreview').textContent =
-        (!isNaN(l) && !isNaN(w) && l > 0 && w > 0) ? `Area: ${(l * w).toFixed(4)} ${u}²` : '';
+        (!isNaN(l) && l > 0) ? `Length: ${l} ${u}` : '';
 }
 
 async function saveEdit() {
@@ -479,9 +462,8 @@ async function saveEdit() {
     let qty, fl = null, fw = null;
     if (cat === 'fabrics') {
         fl = parseFloat(document.getElementById('editFabricLength').value);
-        fw = parseFloat(document.getElementById('editFabricWidth').value);
-        if (!fl || !fw || fl <= 0 || fw <= 0) { showErr('editError', 'Enter valid length and width.'); return; }
-        qty = fl * fw;
+        if (!fl || fl <= 0) { showErr('editError', 'Enter a valid length.'); return; }
+        qty = fl;
     } else {
         qty = parseFloat(document.getElementById('editSingleQty').value);
         if (!qty || qty <= 0) { showErr('editError', 'Enter a valid positive quantity.'); return; }
