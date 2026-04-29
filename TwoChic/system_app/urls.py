@@ -39,5 +39,8 @@ urlpatterns = [
     path('owner/product/<int:pk>/edit/', views.owner_edit_product, name='owner_edit_product'),
 
     path('prodman/order/', views.prodman_order_summary, name='prodman_order_summary'),
-    
+
+    # API endpoints for product materials
+    path('api/products/<int:pk>/materials/', views.api_product_materials, name='api_product_materials'),
+    path('api/products/<int:pk>/materials/<int:pm_pk>/', views.api_product_material_detail, name='api_product_material_detail'),
 ]

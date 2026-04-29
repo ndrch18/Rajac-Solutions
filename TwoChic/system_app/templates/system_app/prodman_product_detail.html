@@ -215,7 +215,12 @@
 <script>
 const PRODUCT_ID = {{ product.id }};
 const API_MATERIALS = `/api/products/${PRODUCT_ID}/materials/`;
-let ALL_RAW = {{ raw_materials_json|safe }};
+let ALL_RAW = [];
+try {
+    ALL_RAW = {{ raw_materials_json|safe }} || [];
+} catch(e) {
+    console.error('Failed to parse raw_materials_json:', e);
+}
 let loggedMats = [];
 let selMat = null;
 
@@ -255,10 +260,17 @@ function closeLogPanel() {
 }
 
 async function loadMats() {
-    const r = await fetch(API_MATERIALS);
-    const d = await r.json();
-    loggedMats = d.materials || [];
-    renderMats();
+    try {
+        const r = await fetch(API_MATERIALS);
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        const d = await r.json();
+        loggedMats = d.materials || [];
+        renderMats();
+    } catch(e) {
+        console.error('loadMats failed:', e);
+        document.getElementById('materialList').innerHTML =
+            '<p class="text-danger text-center" style="font-size:13px;">Failed to load materials.</p>';
+    }
 }
 
 function renderMats() {
@@ -300,11 +312,10 @@ function closeAddPanel() {
 }
 
 function resetAdd() {
-    ['materialSearch','addCategory','addMaterialName','addFabricLength','addFabricWidth','addSingleQty'].forEach(id => {
+    ['addCategory','addMaterialName','addFabricLength','addFabricWidth','addSingleQty'].forEach(id => {
         const el = document.getElementById(id);
         if (el) el.value = '';
     });
-    document.getElementById('addCategory').value = '';
     document.getElementById('addMaterialName').innerHTML = '<option value="">— Select Material —</option>';
     document.getElementById('addQtyArea').classList.add('d-none');
     document.getElementById('addFabricInputs').classList.add('d-none');
@@ -314,16 +325,9 @@ function resetAdd() {
     selMat = null;
 }
 
-function filterMaterials() {
-    const s = document.getElementById('materialSearch').value.toLowerCase();
-    const cat = document.getElementById('addCategory').value;
-    populateDrop(cat, s);
-}
-
 function onCategoryChange() {
     const cat = document.getElementById('addCategory').value;
-    const s = document.getElementById('materialSearch').value.toLowerCase();
-    populateDrop(cat, s);
+    populateDrop(cat, '');
     document.getElementById('addQtyArea').classList.add('d-none');
     selMat = null;
 }
@@ -338,19 +342,26 @@ function populateDrop(cat, search) {
     });
     const sel = document.getElementById('addMaterialName');
     sel.innerHTML = '<option value="">— Select Material —</option>';
-    filtered.forEach(rm => {
+    if (filtered.length === 0) {
         const opt = document.createElement('option');
-        opt.value = rm.id;
-        opt.textContent = `${rm.name} (${rm.unit}) — stock: ${rm.quantity}`;
+        opt.disabled = true;
+        opt.textContent = '— No materials available —';
         sel.appendChild(opt);
-    });
+    } else {
+        filtered.forEach(rm => {
+            const opt = document.createElement('option');
+            opt.value = rm.id;
+            opt.textContent = `${rm.name} (${rm.unit}) — stock: ${rm.quantity}`;
+            sel.appendChild(opt);
+        });
+    }
     document.getElementById('addQtyArea').classList.add('d-none');
     selMat = null;
 }
 
 function onMaterialSelect() {
     const id = parseInt(document.getElementById('addMaterialName').value);
-    if (!id) { document.getElementById('addQtyArea').classList.add('d-none'); selMat=null; return; }
+    if (!id) { document.getElementById('addQtyArea').classList.add('d-none'); selMat = null; return; }
     selMat = ALL_RAW.find(r => r.id === id);
     if (!selMat) return;
     document.getElementById('addCategory').value = selMat.category;
@@ -380,43 +391,48 @@ function computeAddFabricQty() {
     const w = parseFloat(document.getElementById('addFabricWidth').value);
     const u = selMat ? selMat.unit : '';
     document.getElementById('addFabricPreview').textContent =
-        (!isNaN(l) && !isNaN(w) && l>0 && w>0) ? `Area: ${(l*w).toFixed(4)} ${u}²` : '';
+        (!isNaN(l) && !isNaN(w) && l > 0 && w > 0) ? `Area: ${(l * w).toFixed(4)} ${u}²` : '';
 }
 
 function sanitizeNumber(inp) {
-    // Only allow digits and one decimal point; block letters
     let v = inp.value.replace(/[^0-9.]/g, '');
     const parts = v.split('.');
-    if (parts.length > 2) v = parts[0]+'.'+parts.slice(1).join('');
+    if (parts.length > 2) v = parts[0] + '.' + parts.slice(1).join('');
     inp.value = v;
 }
 
 async function submitAdd() {
     document.getElementById('addError').style.display = 'none';
-    if (!selMat) { showErr('addError','Please select a material.'); return; }
-    let qty, fl=null, fw=null;
+    if (!selMat) { showErr('addError', 'Please select a material.'); return; }
+    let qty, fl = null, fw = null;
     if (selMat.category === 'fabrics') {
         fl = parseFloat(document.getElementById('addFabricLength').value);
         fw = parseFloat(document.getElementById('addFabricWidth').value);
-        if (!fl||!fw||fl<=0||fw<=0) { showErr('addError','Enter valid length and width (positive numbers only).'); return; }
+        if (!fl || !fw || fl <= 0 || fw <= 0) { showErr('addError', 'Enter valid length and width (positive numbers only).'); return; }
         qty = fl * fw;
     } else {
         qty = parseFloat(document.getElementById('addSingleQty').value);
-        if (!qty||qty<=0) { showErr('addError','Enter a valid quantity (positive number only).'); return; }
+        if (!qty || qty <= 0) { showErr('addError', 'Enter a valid quantity (positive number only).'); return; }
     }
-
-    const r = await fetch(API_MATERIALS, {
-        method:'POST',
-        headers:{'Content-Type':'application/json','X-CSRFToken':getCsrf()},
-        body: JSON.stringify({raw_material_id:selMat.id, quantity_per_garment:qty, fabric_length:fl, fabric_width:fw})
-    });
-    const d = await r.json();
-    if (!r.ok || !d.success) { showErr('addError', d.error||'Error saving.'); return; }
-    loggedMats.push({id:d.id, raw_material_id:d.raw_material_id, material_name:d.material_name,
-        category:d.category, unit:d.unit, quantity_per_garment:d.quantity_per_garment,
-        fabric_length:d.fabric_length, fabric_width:d.fabric_width});
-    renderMats();
-    closeAddPanel();
+    try {
+        const r = await fetch(API_MATERIALS, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCsrf() },
+            body: JSON.stringify({ raw_material_id: selMat.id, quantity_per_garment: qty, fabric_length: fl, fabric_width: fw })
+        });
+        const d = await r.json();
+        if (!r.ok || !d.success) { showErr('addError', d.error || 'Error saving.'); return; }
+        loggedMats.push({
+            id: d.id, raw_material_id: d.raw_material_id, material_name: d.material_name,
+            category: d.category, unit: d.unit, quantity_per_garment: d.quantity_per_garment,
+            fabric_length: d.fabric_length, fabric_width: d.fabric_width
+        });
+        renderMats();
+        closeAddPanel();
+    } catch(e) {
+        console.error('submitAdd failed:', e);
+        showErr('addError', 'Network error. Please try again.');
+    }
 }
 
 // ── Edit Panel ────────────────────────────────────────────────────
@@ -454,46 +470,60 @@ function computeEditFabricQty() {
     const w = parseFloat(document.getElementById('editFabricWidth').value);
     const u = document.getElementById('editUnitVal').value;
     document.getElementById('editFabricPreview').textContent =
-        (!isNaN(l)&&!isNaN(w)&&l>0&&w>0) ? `Area: ${(l*w).toFixed(4)} ${u}²` : '';
+        (!isNaN(l) && !isNaN(w) && l > 0 && w > 0) ? `Area: ${(l * w).toFixed(4)} ${u}²` : '';
 }
 
 async function saveEdit() {
     const pmId = document.getElementById('editPmId').value;
     const cat = document.getElementById('editCat').value;
-    let qty, fl=null, fw=null;
+    let qty, fl = null, fw = null;
     if (cat === 'fabrics') {
         fl = parseFloat(document.getElementById('editFabricLength').value);
         fw = parseFloat(document.getElementById('editFabricWidth').value);
-        if (!fl||!fw||fl<=0||fw<=0) { showErr('editError','Enter valid length and width.'); return; }
+        if (!fl || !fw || fl <= 0 || fw <= 0) { showErr('editError', 'Enter valid length and width.'); return; }
         qty = fl * fw;
     } else {
         qty = parseFloat(document.getElementById('editSingleQty').value);
-        if (!qty||qty<=0) { showErr('editError','Enter a valid positive quantity.'); return; }
+        if (!qty || qty <= 0) { showErr('editError', 'Enter a valid positive quantity.'); return; }
     }
-    const r = await fetch(`/api/products/${PRODUCT_ID}/materials/${pmId}/`, {
-        method:'PUT',
-        headers:{'Content-Type':'application/json','X-CSRFToken':getCsrf()},
-        body: JSON.stringify({quantity_per_garment:qty, fabric_length:fl, fabric_width:fw})
-    });
-    const d = await r.json();
-    if (!r.ok || !d.success) { showErr('editError', d.error||'Error.'); return; }
-    const idx = loggedMats.findIndex(m => m.id === parseInt(pmId));
-    if (idx >= 0) { loggedMats[idx].quantity_per_garment=d.quantity_per_garment; loggedMats[idx].fabric_length=d.fabric_length; loggedMats[idx].fabric_width=d.fabric_width; }
-    renderMats();
-    closeEditPanel();
+    try {
+        const r = await fetch(`/api/products/${PRODUCT_ID}/materials/${pmId}/`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCsrf() },
+            body: JSON.stringify({ quantity_per_garment: qty, fabric_length: fl, fabric_width: fw })
+        });
+        const d = await r.json();
+        if (!r.ok || !d.success) { showErr('editError', d.error || 'Error.'); return; }
+        const idx = loggedMats.findIndex(m => m.id === parseInt(pmId));
+        if (idx >= 0) {
+            loggedMats[idx].quantity_per_garment = d.quantity_per_garment;
+            loggedMats[idx].fabric_length = d.fabric_length;
+            loggedMats[idx].fabric_width = d.fabric_width;
+        }
+        renderMats();
+        closeEditPanel();
+    } catch(e) {
+        console.error('saveEdit failed:', e);
+        showErr('editError', 'Network error. Please try again.');
+    }
 }
 
 async function deleteMaterial() {
     if (!confirm('Remove this material from the log?')) return;
     const pmId = document.getElementById('editPmId').value;
-    const r = await fetch(`/api/products/${PRODUCT_ID}/materials/${pmId}/`, {
-        method:'DELETE', headers:{'X-CSRFToken':getCsrf()}
-    });
-    const d = await r.json();
-    if (!r.ok || !d.success) { showErr('editError', d.error||'Error.'); return; }
-    loggedMats = loggedMats.filter(m => m.id !== parseInt(pmId));
-    renderMats();
-    closeEditPanel();
+    try {
+        const r = await fetch(`/api/products/${PRODUCT_ID}/materials/${pmId}/`, {
+            method: 'DELETE', headers: { 'X-CSRFToken': getCsrf() }
+        });
+        const d = await r.json();
+        if (!r.ok || !d.success) { showErr('editError', d.error || 'Error.'); return; }
+        loggedMats = loggedMats.filter(m => m.id !== parseInt(pmId));
+        renderMats();
+        closeEditPanel();
+    } catch(e) {
+        console.error('deleteMaterial failed:', e);
+        showErr('editError', 'Network error. Please try again.');
+    }
 }
 
 function showErr(id, msg) {
@@ -501,5 +531,6 @@ function showErr(id, msg) {
     e.textContent = msg;
     e.style.display = 'block';
 }
+
 </script>
 {% endblock %}
