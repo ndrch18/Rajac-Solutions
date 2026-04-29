@@ -868,16 +868,31 @@ def api_product_materials(request, pk):
         rm = get_object_or_404(RawMaterial, pk=rm_id)
 
         # Check if already logged for this product
-        if ProductMaterial.objects.filter(product=product, raw_material=rm).exists():
-            return JsonResponse({'error': f'"{rm.material_name}" is already logged for this product. Use Edit to update it.'}, status=400)
-
-        pm = ProductMaterial.objects.create(
+        pm, created = ProductMaterial.objects.get_or_create(
             product=product,
             raw_material=rm,
-            quantity_per_garment=qty,
-            fabric_length=float(fabric_length) if fabric_length is not None else None,
-            fabric_width=float(fabric_width) if fabric_width is not None else None,
+            defaults={
+                'quantity_per_garment': qty,
+                'fabric_length': float(fabric_length) if fabric_length is not None else None,
+                'fabric_width': float(fabric_width) if fabric_width is not None else None,
+            }
         )
+
+        if not created:
+            # Restore the old quantity before applying the new one
+            old_qty = pm.quantity_per_garment
+            rm.material_quantity += old_qty
+            pm.quantity_per_garment = qty
+            pm.fabric_length = float(fabric_length) if fabric_length is not None else None
+            pm.fabric_width = float(fabric_width) if fabric_width is not None else None
+            pm.save()
+
+        # Deduct from raw material inventory
+        if rm.material_quantity < qty:
+            return JsonResponse({'error': 'Insufficient stock in inventory.'}, status=400)
+
+        rm.material_quantity -= qty
+        rm.save()
 
         return JsonResponse({
             'success': True,
@@ -890,8 +905,6 @@ def api_product_materials(request, pk):
             'fabric_length': pm.fabric_length,
             'fabric_width': pm.fabric_width,
         })
-
-    return JsonResponse({'error': 'Method not allowed'}, status=405)
 
 
 def api_product_material_detail(request, pk, pm_pk):
