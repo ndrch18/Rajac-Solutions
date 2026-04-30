@@ -114,6 +114,7 @@ def owner_homepage(request):
         'employee_id': employee_id,
     })
 
+
 def owner_sales_report(request):
     if not request.session.get('account_id'):
         return redirect('login')
@@ -130,13 +131,16 @@ def owner_sales_report(request):
     today = timezone.now()
     month_keys = []
     month_data = {}
-    for i in range(5, -1, -1):
-        month = today.month - i
-        year = today.year
-        while month <= 0:
-            month += 12
-            year -= 1
-        key = (year, month)
+    # Show current 6-month window: Jan-Jun, Jul-Dec
+    current_month = today.month
+    if current_month <= 6:
+        start_month = 1
+        end_month = 6
+    else:
+        start_month = 7
+        end_month = 12
+    for month in range(start_month, end_month + 1):
+        key = (today.year, month)
         month_keys.append(key)
         month_data[key] = {
             'label': month_abbr[month],
