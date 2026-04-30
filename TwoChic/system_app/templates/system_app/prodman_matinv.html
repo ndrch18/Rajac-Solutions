@@ -249,7 +249,7 @@
               action="{% url 'delete_raw_material' edit_target.id %}?category={{ selected_category }}&q={{ q }}&sort={{ sort }}"
               class="d-inline">
           {% csrf_token %}
-          <button type="submit" class="btn delete-btn">Delete</button>
+          <button type="submit" class="btn delete-btn" onclick="return confirm('Are you sure you want to delete this material?');">Delete</button>
         </form>
         <button type="submit" form="editForm" class="btn add-btn">Save</button>
         {% endif %}
