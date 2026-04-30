@@ -159,7 +159,8 @@
             <p class="mb-1 fw-600">Retail Price:</p>
             <input type="number" id="retailPriceInput" placeholder="Enter Retail Price"
                    value="{{ product.price }}"
-                   style="width:100%; border:1px solid #ddd; border-radius:8px; padding:8px 12px; font-size:13px;">
+                   style="width:100%; border:1px solid #ddd; border-radius:8px; padding:8px 12px; font-size:13px;"
+                   onfocus="if(parseFloat(this.value)==0)this.value=''">
           </div>
 
           <!-- Action Buttons -->

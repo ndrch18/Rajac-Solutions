@@ -64,7 +64,8 @@
                        step="0.01"
                        name="price"
                        class="form-control"
-                       value="{{ product.price }}">
+                       value="{{ product.price }}"
+                       onfocus="if(parseFloat(this.value)===0)this.value=''">
             </div>
 
             <!-- BUTTON -->
