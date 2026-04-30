@@ -489,7 +489,7 @@ def owner_manage_employees(request):
     if not employee_id.startswith('0'):
         return redirect('login')
 
-    message = ''
+    message = request.session.pop('employee_message', '')
     message_type = 'success'
     add_form = AddEmployeeForm()
     edit_form = None
@@ -539,8 +539,8 @@ def owner_manage_employees(request):
                         obj.save()
                         # Update the linked Account
                         Account.objects.filter(employee_id=old_id).update(employee_id=new_id)
-                        message = f"Employee updated. New ID: {new_id}"
-                        message_type = 'success'
+                        request.session['employee_message'] = f"Employee updated. New ID: {new_id}"
+                        return redirect('owner_manage_employees')
                     except Exception as e:
                         message = f"Error updating employee: {e}"
                         message_type = 'danger'
@@ -548,8 +548,8 @@ def owner_manage_employees(request):
                     if new_role in ['production_manager', 'production_employee']:
                         obj.employee_role = new_role
                     obj.save()
-                    message = "Employee updated successfully."
-                    message_type = 'success'
+                    request.session['employee_message'] = "Employee updated successfully."
+                    return redirect('owner_manage_employees')
             else:
                 edit_target = emp
                 message = "Please fix the errors below."
