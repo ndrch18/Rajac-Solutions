@@ -163,7 +163,6 @@
                     <span class="material-icons align-middle me-1" style="color:#5a9ea8;">edit</span>
                     Edit Employee Name
                 </h6>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             {% if edit_target and edit_form %}
             <form method="post">
@@ -173,17 +172,14 @@
                 <div class="modal-body">
                     <div class="mb-2">
                         <label class="form-label text-muted small mb-0">Employee ID</label>
-                        <p class="fw-semibold mb-3" style="color:#5a9ea8;">{{ edit_target.employee_id }}</p>
+                        <p class="fw-semibold mb-3" style="color:#000;">{{ edit_target.employee_id }}</p>
                     </div>
-                    <div class="mb-2">
-                        <label class="form-label text-muted small mb-0">Role</label>
-                        <p class="mb-3">
-                            {% if edit_target.employee_role == 'production_manager' %}
-                                <span class="badge" style="background-color:#5a9ea8;">Production Manager</span>
-                            {% else %}
-                                <span class="badge" style="background-color:#7dbdc7;">Production Employee</span>
-                            {% endif %}
-                        </p>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Role</label>
+                        <select name="employee_role" class="form-select custom-input">
+                            <option value="production_manager" {% if edit_target.employee_role == 'production_manager' %}selected{% endif %}>Production Manager</option>
+                            <option value="production_employee" {% if edit_target.employee_role == 'production_employee' %}selected{% endif %}>Production Employee</option>
+                        </select>
                     </div>
                     <div class="mb-2">
                         <label class="form-label fw-semibold">Employee Name</label>
@@ -210,5 +206,17 @@
         </div>
     </div>
 </div>
+
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.has("edit")) {
+      const editModal = document.getElementById("editEmployeeModal");
+      if (editModal) {
+        new bootstrap.Modal(editModal).show();
+      }
+    }
+  });
+</script>
 
 {% endblock %}

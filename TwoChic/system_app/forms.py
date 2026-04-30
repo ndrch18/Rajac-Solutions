@@ -21,9 +21,9 @@ class RawMaterialForm(forms.ModelForm):
         self.fields["material_category"].widget.attrs.update({"class": "form-select custom-input", "id": "id_material_category"})
         self.fields["material_name"].widget.attrs.update({"class": "form-control custom-input", "placeholder": "Enter Material Name"})
         self.fields["material_unit"].widget.attrs.update({"class": "form-select custom-input", "id": "id_material_unit"})
-        self.fields["material_quantity"].widget.attrs.update({"class": "form-control custom-input", "placeholder": "Enter quantity"})
-        self.fields["material_unitprice"].widget.attrs.update({"class": "form-control custom-input", "placeholder": "Enter Unit Price", "step": "0.01"})
-        self.fields["minimum_threshold"].widget.attrs.update({"class": "form-control custom-input", "placeholder": "Enter minimum threshold", "step": "0.01"})
+        self.fields["material_quantity"].widget.attrs.update({"class": "form-control custom-input", "placeholder": "Enter quantity", "onfocus": "if(this.value=='0')this.value=''"})
+        self.fields["material_unitprice"].widget.attrs.update({"class": "form-control custom-input", "placeholder": "Enter Unit Price", "step": "0.01", "onfocus": "if(this.value=='0')this.value=''"})
+        self.fields["minimum_threshold"].widget.attrs.update({"class": "form-control custom-input", "placeholder": "Enter minimum threshold", "step": "0.01", "onfocus": "if(this.value=='0')this.value=''"})
 
         self.fields["material_unit"].queryset = MaterialUnit.objects.none()
 

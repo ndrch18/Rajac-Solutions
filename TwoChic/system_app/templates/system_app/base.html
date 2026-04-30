@@ -96,6 +96,34 @@
         </div>
     </nav>
 
+    {% if request.session.using_default_password %}
+    <div class="modal fade" id="defaultPasswordModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content" style="border-radius:16px; overflow:hidden;">
+                <div style="background:#fff3cd; padding:14px 18px; display:flex; align-items:center; gap:10px;">
+                    <span class="material-icons" style="color:#856404;">warning</span>
+                    <span style="font-size:15px; font-weight:600; color:#856404;">Security Notice</span>
+                </div>
+                <div class="modal-body" style="font-size:13px; color:#555; padding:20px;">
+                    <p class="mb-0">You are using a default password. Please go to <strong>Change Password</strong> in your account menu to update it.</p>
+                </div>
+                <div class="modal-footer" style="border:none; padding:12px 20px;">
+                    <button type="button" class="btn btn-sm" data-bs-dismiss="modal"
+                        style="background:#ffc107; color:#000; border:none; border-radius:8px; padding:8px 16px; font-weight:600;">
+                        OK
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const modal = new bootstrap.Modal(document.getElementById('defaultPasswordModal'));
+            modal.show();
+        });
+    </script>
+    {% endif %}
+
     <main class="container my-4 main-content">
         {% block content %}{% endblock %}
     </main>

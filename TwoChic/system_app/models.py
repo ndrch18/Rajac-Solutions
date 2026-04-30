@@ -64,7 +64,7 @@ class EmployeeRole(models.TextChoices):
     PRODUCTION_EMPLOYEE = 'production_employee', 'Production Employee'
 
 class Employee(models.Model):
-    employee_id = models.CharField(max_length=10, unique=True, editable=False)
+    employee_id = models.CharField(max_length=10, unique=True)
     employee_name = models.CharField(max_length=100)
     employee_role = models.CharField(
         max_length=30,

@@ -91,4 +91,41 @@
     {% endif %}
 
 </div>
+
+<!-- TOAST NOTIFICATION -->
+<div id="orderToast" style="
+    display:none;
+    position:fixed;
+    bottom:24px;
+    left:50%;
+    transform:translateX(-50%);
+    background:#1a5c63;
+    color:#fff;
+    padding:12px 24px;
+    border-radius:12px;
+    font-size:13px;
+    font-weight:600;
+    box-shadow:0 4px 16px rgba(0,0,0,0.2);
+    z-index:9999;
+    white-space:nowrap;
+">
+    <span class="material-icons align-middle" style="font-size:16px;">check_circle</span>
+    <span id="toastMsg"></span>
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('added') === '1') {
+        const name = params.get('name') || 'Product';
+        const toast = document.getElementById('orderToast');
+        document.getElementById('toastMsg').textContent = ` "${name}" added to order!`;
+        toast.style.display = 'block';
+        setTimeout(() => { toast.style.display = 'none'; }, 3000);
+        // Clean URL without reload
+        window.history.replaceState({}, '', window.location.pathname);
+    }
+});
+</script>
+
 {% endblock %}

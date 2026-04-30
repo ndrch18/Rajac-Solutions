@@ -24,6 +24,8 @@ account_id = 0
 # Function for login page
 def login_view(request):
     message = request.session.pop('message', '')
+    if request.method == 'GET':
+        request.session['using_default_password'] = False
 
     if request.method == 'POST':
         employee_id = request.POST.get('employee_id')
@@ -39,8 +41,12 @@ def login_view(request):
                     from .models import Employee
                     emp = Employee.objects.get(employee_id=employee_id)
                     request.session['employee_name'] = emp.employee_name
+                    # Flag if using default password
+                    default_passwords = ['1111', '2222']
+                    request.session['using_default_password'] = account.password in default_passwords
                 except Employee.DoesNotExist:
                     request.session['employee_name'] = 'Owner'
+                    request.session['using_default_password'] = False
 
                 if employee_id.startswith('0'):
                     return redirect('owner_homepage')
@@ -58,7 +64,7 @@ def login_view(request):
     return render(request, 'system_app/login.html', {'message': message})
 
 def logout_view(request):
-    request.session.pop('account_id', None)
+    request.session.flush()
     return redirect('login')
 
 def change_password_view(request):
@@ -84,7 +90,16 @@ def change_password_view(request):
         else:
             account.password = new_pw
             account.save()
-            message = "Password changed successfully!"
+            request.session['using_default_password'] = False
+            request.session.modified = True
+            employee_id = request.session.get('employee_id', '')
+            if employee_id.startswith('0'):
+                return redirect('owner_homepage')
+            elif employee_id.startswith('1'):
+                return redirect('prodman_homepage')
+            elif employee_id.startswith('2'):
+                return redirect('prodemp_home')
+            return redirect('login')
 
     return render(request, "system_app/change_password.html", {"message": message})
 
@@ -491,9 +506,10 @@ def owner_manage_employees(request):
                         employee_name=name,
                         employee_role=role,
                     )
+                    default_password = '1111' if role == 'production_manager' else '2222'
                     Account.objects.create(
                         employee_id=new_id,
-                        password=new_id,
+                        password=default_password,
                     )
                     message = f"Employee added successfully! ID: {new_id} | Default password: {new_id}"
                     message_type = 'success'
@@ -507,9 +523,29 @@ def owner_manage_employees(request):
             emp = get_object_or_404(Employee, pk=edit_id)
             edit_form = EditEmployeeNameForm(request.POST, instance=emp)
             if edit_form.is_valid():
-                edit_form.save()
-                message = "Employee name updated successfully."
-                message_type = 'success'
+                obj = edit_form.save(commit=False)
+                new_role = request.POST.get('employee_role')
+                if new_role in ['production_manager', 'production_employee'] and new_role != emp.employee_role:
+                    # Role changed — generate new ID and update Account
+                    try:
+                        new_id = _generate_employee_id(new_role)
+                        old_id = emp.employee_id
+                        obj.employee_role = new_role
+                        obj.employee_id = new_id
+                        obj.save()
+                        # Update the linked Account
+                        Account.objects.filter(employee_id=old_id).update(employee_id=new_id)
+                        message = f"Employee updated. New ID: {new_id}"
+                        message_type = 'success'
+                    except Exception as e:
+                        message = f"Error updating employee: {e}"
+                        message_type = 'danger'
+                else:
+                    if new_role in ['production_manager', 'production_employee']:
+                        obj.employee_role = new_role
+                    obj.save()
+                    message = "Employee updated successfully."
+                    message_type = 'success'
             else:
                 edit_target = emp
                 message = "Please fix the errors below."
@@ -654,7 +690,8 @@ def prodman_products(request):
                 request.session['order_items'] = order_items
                 request.session.modified = True
 
-        return redirect('prodman_products_list')
+        from urllib.parse import urlencode
+        return redirect(f"{reverse('prodman_products_list')}?added=1&name={product.product_name}")
 
     return render(request, 'system_app/prodman_products_list.html', {
         'products': products,
