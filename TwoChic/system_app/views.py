@@ -11,7 +11,7 @@ from django.db import models as db_models
 
 import json
 from django.core.serializers.json import DjangoJSONEncoder
-from datetime import datetime
+from datetime import datetime, timedelta
 from calendar import month_abbr
 from django.urls import reverse
 from urllib.parse import urlencode
@@ -153,14 +153,20 @@ def owner_sales_report(request):
             product = item.product
             qty = item.quantity
             total_products_sold += qty
-            item_sales = product.price * qty
+            item_sales = (item.product_price or (product.price if product else 0)) * qty
             total_sales += item_sales
-            product_quantities[product.product_name] = product_quantities.get(product.product_name, 0) + qty
+            name = item.product_name or (product.product_name if product else 'Deleted Product')
+            product_quantities[name] = product_quantities.get(name, 0) + qty
 
-            item_cost = 0.0
-            for pm in product.product_materials.all():
-                if pm.quantity_per_garment and pm.raw_material.material_unitprice:
-                    item_cost += pm.quantity_per_garment * pm.raw_material.material_unitprice * qty
+            if item.material_cost > 0:
+                item_cost = item.material_cost * qty
+            elif product:
+                item_cost = 0.0
+                for pm in product.product_materials.all():
+                    if pm.quantity_per_garment and pm.raw_material.material_unitprice:
+                        item_cost += pm.quantity_per_garment * pm.raw_material.material_unitprice * qty
+            else:
+                item_cost = 0.0
             total_expenses += item_cost
 
             order_month = (order.created_at.year, order.created_at.month)
@@ -515,7 +521,7 @@ def owner_manage_employees(request):
                         employee_id=new_id,
                         password=default_password,
                     )
-                    message = f"Employee added successfully! ID: {new_id} | Default password: {new_id}"
+                    message = f"Employee added successfully! ID: {new_id} | Default password: {default_password}"
                     message_type = 'success'
                     add_form = AddEmployeeForm()
                 except Exception as e:
@@ -1045,9 +1051,17 @@ def prodman_order_summary(request):
                     try:
                         product = Product.objects.get(id=item.get('product_id'))
                         qty = item.get('qty', 0)
+                        mat_cost = 0.0
+                        for pm in product.product_materials.select_related('raw_material').all():
+                            if pm.quantity_per_garment and pm.raw_material.material_unitprice:
+                                mat_cost += pm.quantity_per_garment * pm.raw_material.material_unitprice
+
                         OrderItem.objects.create(
                             order=order,
                             product=product,
+                            product_name=product.product_name,
+                            product_price=product.price,
+                            material_cost=mat_cost,
                             quantity=qty
                         )
                         product.quantity = max(0, product.quantity - qty)
@@ -1093,57 +1107,93 @@ from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, 
 from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.lib.units import cm
 
+def _filter_order_items(filter_type):
+    qs = OrderItem.objects.select_related('order', 'product').order_by('-order__created_at')
+    now = timezone.now()
+    if filter_type == 'weekly':
+        start = now - timedelta(days=7)
+        qs = qs.filter(order__created_at__gte=start)
+    elif filter_type == 'monthly':
+        qs = qs.filter(order__created_at__year=now.year, order__created_at__month=now.month)
+    elif filter_type == 'yearly':
+        qs = qs.filter(order__created_at__year=now.year)
+    return qs
+
+
 def export_sales_xlsx(request):
     if not request.session.get('account_id'):
         return redirect('login')
+
+    filter_type = request.GET.get('filter', 'all')
 
     wb = openpyxl.Workbook()
     ws = wb.active
     ws.title = "Sales Report"
 
-    # Header row styling
     header_fill = PatternFill(start_color="C6E8ED", end_color="C6E8ED", fill_type="solid")
     header_font = Font(bold=True)
 
-    headers = ['Order ID', 'Date', 'Product', 'Quantity', 'Unit Price (₱)', 'Subtotal (₱)']
+    headers = ['Order ID', 'Date', 'Product', 'Quantity', 'Unit Price (₱)', 'Subtotal (₱)', 'Material Cost (₱)', 'Net Profit (₱)']
     for col, header in enumerate(headers, 1):
         cell = ws.cell(row=1, column=col, value=header)
         cell.font = header_font
         cell.fill = header_fill
         cell.alignment = Alignment(horizontal='center')
 
-    # Data rows
     row_num = 2
-    total = 0
-    for item in OrderItem.objects.select_related('order', 'product').order_by('-order__created_at'):
-        subtotal = round(item.quantity * item.product.price, 2)
-        total += subtotal
+    total_sales = 0
+    total_expenses = 0
+
+    for item in _filter_order_items(filter_type):
+        price = item.product_price or (item.product.price if item.product else 0)
+        name = item.product_name or (item.product.product_name if item.product else 'Deleted Product')
+        subtotal = round(item.quantity * price, 2)
+
+        if item.material_cost > 0:
+            mat_cost = round(item.material_cost * item.quantity, 2)
+        elif item.product:
+            mat_cost = 0.0
+            for pm in item.product.product_materials.select_related('raw_material').all():
+                if pm.quantity_per_garment and pm.raw_material.material_unitprice:
+                    mat_cost += pm.quantity_per_garment * pm.raw_material.material_unitprice * item.quantity
+            mat_cost = round(mat_cost, 2)
+        else:
+            mat_cost = 0.0
+
+        net_profit = round(subtotal - mat_cost, 2)
+        total_sales += subtotal
+        total_expenses += mat_cost
+
         ws.append([
             f'#{item.order.id}',
             item.order.created_at.strftime('%Y-%m-%d %H:%M'),
-            item.product.product_name,
+            name,
             item.quantity,
-            item.product.price,
+            price,
             subtotal,
+            mat_cost,
+            net_profit,
         ])
         row_num += 1
 
-    # Total row
     ws.append([])
     total_row = row_num + 1
     ws.cell(row=total_row, column=5, value='TOTAL').font = Font(bold=True)
-    ws.cell(row=total_row, column=6, value=round(total, 2)).font = Font(bold=True)
+    ws.cell(row=total_row, column=6, value=round(total_sales, 2)).font = Font(bold=True)
+    ws.cell(row=total_row, column=7, value=round(total_expenses, 2)).font = Font(bold=True)
+    ws.cell(row=total_row, column=8, value=round(total_sales - total_expenses, 2)).font = Font(bold=True)
 
-    # Column widths
     ws.column_dimensions['A'].width = 12
     ws.column_dimensions['B'].width = 20
     ws.column_dimensions['C'].width = 30
     ws.column_dimensions['D'].width = 12
     ws.column_dimensions['E'].width = 18
     ws.column_dimensions['F'].width = 18
+    ws.column_dimensions['G'].width = 20
+    ws.column_dimensions['H'].width = 18
 
     response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-    response['Content-Disposition'] = 'attachment; filename="sales_report.xlsx"'
+    response['Content-Disposition'] = f'attachment; filename="sales_report_{filter_type}.xlsx"'
     wb.save(response)
     return response
 
@@ -1152,42 +1202,64 @@ def export_sales_pdf(request):
     if not request.session.get('account_id'):
         return redirect('login')
 
+    filter_type = request.GET.get('filter', 'all')
+
     response = HttpResponse(content_type='application/pdf')
-    response['Content-Disposition'] = 'attachment; filename="sales_report.pdf"'
+    response['Content-Disposition'] = f'attachment; filename="sales_report_{filter_type}.pdf"'
 
     doc = SimpleDocTemplate(response, pagesize=A4, topMargin=1.5*cm, bottomMargin=1.5*cm)
     styles = getSampleStyleSheet()
     elements = []
 
-    # Title
-    title = Paragraph("<b>Two Chic Manila — Sales Report</b>", styles['Title'])
+    title = Paragraph(f"<b>Two Chic Manila — Sales Report ({filter_type.title()})</b>", styles['Title'])
     elements.append(title)
     elements.append(Spacer(1, 0.5*cm))
 
-    # Table data
-    data = [['Order ID', 'Date', 'Product', 'Qty', 'Unit Price', 'Subtotal']]
-    total = 0
+    data = [['Order ID', 'Date', 'Product', 'Qty', 'Unit Price', 'Subtotal', 'Mat. Cost', 'Net Profit']]
+    total_sales = 0
+    total_expenses = 0
 
-    for item in OrderItem.objects.select_related('order', 'product').order_by('-order__created_at'):
-        subtotal = round(item.quantity * item.product.price, 2)
-        total += subtotal
+    for item in _filter_order_items(filter_type):
+        price = item.product_price or (item.product.price if item.product else 0)
+        name = item.product_name or (item.product.product_name if item.product else 'Deleted Product')
+        subtotal = round(item.quantity * price, 2)
+
+        if item.material_cost > 0:
+            mat_cost = round(item.material_cost * item.quantity, 2)
+        elif item.product:
+            mat_cost = 0.0
+            for pm in item.product.product_materials.select_related('raw_material').all():
+                if pm.quantity_per_garment and pm.raw_material.material_unitprice:
+                    mat_cost += pm.quantity_per_garment * pm.raw_material.material_unitprice * item.quantity
+            mat_cost = round(mat_cost, 2)
+        else:
+            mat_cost = 0.0
+
+        net_profit = round(subtotal - mat_cost, 2)
+        total_sales += subtotal
+        total_expenses += mat_cost
+
         data.append([
             f'#{item.order.id}',
             item.order.created_at.strftime('%Y-%m-%d %H:%M'),
-            item.product.product_name,
+            name,
             str(item.quantity),
-            f'P{item.product.price:,.2f}',
+            f'P{price:,.2f}',
             f'P{subtotal:,.2f}',
+            f'P{mat_cost:,.2f}',
+            f'P{net_profit:,.2f}',
         ])
 
-    # Total row
-    data.append(['', '', '', '', 'TOTAL', f'P{round(total, 2):,.2f}'])
+    data.append(['', '', '', '', 'TOTAL',
+                 f'P{round(total_sales, 2):,.2f}',
+                 f'P{round(total_expenses, 2):,.2f}',
+                 f'P{round(total_sales - total_expenses, 2):,.2f}'])
 
-    table = Table(data, colWidths=[2*cm, 4*cm, 6*cm, 1.5*cm, 3*cm, 3*cm])
+    table = Table(data, colWidths=[1.5*cm, 3.5*cm, 5*cm, 1*cm, 2.5*cm, 2.5*cm, 2.5*cm, 2.5*cm])
     table.setStyle(TableStyle([
         ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#C6E8ED')),
         ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-        ('FONTSIZE', (0, 0), (-1, -1), 9),
+        ('FONTSIZE', (0, 0), (-1, -1), 8),
         ('GRID', (0, 0), (-1, -2), 0.5, colors.HexColor('#dddddd')),
         ('ROWBACKGROUNDS', (0, 1), (-1, -2), [colors.white, colors.HexColor('#f5f5f5')]),
         ('FONTNAME', (0, -1), (-1, -1), 'Helvetica-Bold'),

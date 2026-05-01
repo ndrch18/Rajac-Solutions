@@ -82,6 +82,7 @@
           <tr>
             <th>Material</th>
             <th class="text-center">Qty.</th>
+            <th class="text-center">Unit</th>
             <th class="text-center">Min. Threshold</th>
             <th class="text-center">Unit Price</th>
             <th class="text-center">Action</th>
@@ -97,6 +98,7 @@
                 {% endif %}
               </td>
               <td class="text-center">{{ m.material_quantity }}</td>
+              <td class="text-center">{{ m.material_unit.unit_name }}</td>
               <td class="text-center">{{ m.minimum_threshold }}</td>
               <td class="text-center">₱{{ m.material_unitprice|floatformat:0 }}</td>
               <td class="text-center">

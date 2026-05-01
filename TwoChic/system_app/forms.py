@@ -68,6 +68,16 @@ class AddEmployeeForm(forms.Form):
             'placeholder': 'Enter Employee Name',
         })
     )
+
+    def clean_employee_name(self):
+        name = self.cleaned_data.get('employee_name', '').strip()
+        if not name:
+            raise forms.ValidationError("Employee name cannot be empty.")
+        if len(name) < 2:
+            raise forms.ValidationError("Employee name must be at least 2 characters.")
+        if not all(c.isalpha() or c.isspace() or c in ".-'" for c in name):
+            raise forms.ValidationError("Employee name can only contain letters, spaces, hyphens, periods, and apostrophes.")
+        return name
     employee_role = forms.ChoiceField(
         choices=[('', 'Select Role')] + list(EmployeeRole.choices),
         widget=forms.Select(attrs={
