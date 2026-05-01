@@ -73,9 +73,13 @@
                                name="quantity"
                                min="1"
                                class="form-control form-control-sm mb-2"
-                               placeholder="Qty">
+                               placeholder="Qty"
+                               id="qty_{{ product.id }}">
 
-                        <button type="submit" class="btn btn-success btn-sm w-100">
+                        <p id="err_{{ product.id }}" style="font-size:11px; color:#e05a5a; display:none; margin-bottom:4px;">Please enter a quantity.</p>
+
+                        <button type="button" class="btn btn-success btn-sm w-100"
+                                onclick="submitOrder({{ product.id }}, this)">
                             Add to Order
                         </button>
                     </form>
@@ -118,6 +122,18 @@
 </div>
 
 <script>
+    function submitOrder(productId, btn) {
+    const qtyInput = document.getElementById('qty_' + productId);
+    const errMsg = document.getElementById('err_' + productId);
+    const qty = parseInt(qtyInput.value);
+    if (!qtyInput.value || isNaN(qty) || qty < 1) {
+        errMsg.style.display = 'block';
+        return;
+    }
+    errMsg.style.display = 'none';
+    btn.closest('form').submit();
+}
+
 document.addEventListener("DOMContentLoaded", function () {
     const params = new URLSearchParams(window.location.search);
     if (params.get('added') === '1') {
