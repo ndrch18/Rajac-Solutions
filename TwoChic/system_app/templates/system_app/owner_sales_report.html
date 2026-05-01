@@ -7,18 +7,24 @@
             <h5 class="mb-2">Sales & Expenses Report</h5>
             <p class="text-muted mb-0">Overview of completed sales, expense estimates, and top products sold.</p>
         </div>
-        <div class="d-flex gap-2">
-   <a href="{% url 'export_sales_xlsx' %}" class="btn btn-sm"
-        style="background:#92d193; color:#000; border:none; border-radius:8px; padding:6px 14px;">
-        <span class="material-icons align-middle" style="font-size:16px;">download</span>
-        Export Excel
-    </a>
-    <a href="{% url 'export_sales_pdf' %}" class="btn btn-sm"
-        style="background:#eaa2a1; color:#000; border:none; border-radius:8px; padding:6px 14px;">
-        <span class="material-icons align-middle" style="font-size:16px;">picture_as_pdf</span>
-        Export PDF
-    </a>
-</div>
+        <div class="d-flex gap-2 align-items-center flex-wrap">
+            <select id="exportFilter" class="form-select form-select-sm" style="width:auto;">
+                <option value="all">All Time</option>
+                <option value="weekly">This Week</option>
+                <option value="monthly">This Month</option>
+                <option value="yearly">This Year</option>
+            </select>
+            <a id="exportXlsx" href="{% url 'export_sales_xlsx' %}" class="btn btn-sm"
+               style="background:#92d193; color:#000; border:none; border-radius:8px; padding:6px 14px;">
+                <span class="material-icons align-middle" style="font-size:16px;">download</span>
+                Export Excel
+            </a>
+            <a id="exportPdf" href="{% url 'export_sales_pdf' %}" class="btn btn-sm"
+               style="background:#eaa2a1; color:#000; border:none; border-radius:8px; padding:6px 14px;">
+                <span class="material-icons align-middle" style="font-size:16px;">picture_as_pdf</span>
+                Export PDF
+            </a>
+        </div>
     </div>
 
     <div class="row g-3">
@@ -72,12 +78,10 @@
             <div class="d-flex align-items-end justify-content-between px-2" style="height:200px; gap:1rem;">
                 {% for item in chart_data %}
                 <div class="d-flex flex-column align-items-center" style="flex:1;">
-                    <!-- Grouped bars -->
                     <div class="d-flex align-items-end justify-content-center w-100" style="height:170px; gap:4px;">
                         <div style="width:45%; height:{{ item.sales_pct }}%; background:#5AB8C5; border-radius:6px 6px 0 0; transition: height .3s ease;" title="Sales"></div>
                         <div style="width:45%; height:{{ item.expenses_pct }}%; background:#E05A5A; border-radius:6px 6px 0 0; opacity:.85; transition: height .3s ease;" title="Expenses"></div>
                     </div>
-                    <!-- Month label -->
                     <small class="text-muted mt-1">{{ item.label }}</small>
                 </div>
                 {% endfor %}
@@ -117,4 +121,13 @@
         </div>
     </div>
 </div>
+
+<script>
+document.getElementById('exportFilter').addEventListener('change', function () {
+    const filter = this.value;
+    document.getElementById('exportXlsx').href = "{% url 'export_sales_xlsx' %}?filter=" + filter;
+    document.getElementById('exportPdf').href = "{% url 'export_sales_pdf' %}?filter=" + filter;
+});
+</script>
+
 {% endblock %}
