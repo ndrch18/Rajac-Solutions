@@ -261,7 +261,6 @@ def prodman_matinv(request):
         form = RawMaterialForm(request.POST)
         if form.is_valid():
             obj = form.save(commit=False)
-            obj.full_clean()
             obj.save()
             params = {}
             if category:
@@ -423,7 +422,6 @@ def edit_raw_material(request, pk):
         form = RawMaterialForm(request.POST, instance=material)
         if form.is_valid():
             obj = form.save(commit=False)
-            obj.full_clean()
             obj.save()
 
             params = {}

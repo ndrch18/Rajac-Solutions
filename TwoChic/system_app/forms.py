@@ -1,6 +1,7 @@
 from django import forms
 from .models import RawMaterial, MaterialUnit, MaterialCategory, Product, ProductCategory, ProductCollection, Employee, EmployeeRole
 
+
 class RawMaterialForm(forms.ModelForm):
     class Meta:
         model = RawMaterial
@@ -21,9 +22,9 @@ class RawMaterialForm(forms.ModelForm):
         self.fields["material_category"].widget.attrs.update({"class": "form-select custom-input", "id": "id_material_category"})
         self.fields["material_name"].widget.attrs.update({"class": "form-control custom-input", "placeholder": "Enter Material Name"})
         self.fields["material_unit"].widget.attrs.update({"class": "form-select custom-input", "id": "id_material_unit"})
-        self.fields["material_quantity"].widget.attrs.update({"class": "form-control custom-input", "placeholder": "Enter quantity", "onfocus": "if(this.value=='0')this.value=''"})
-        self.fields["material_unitprice"].widget.attrs.update({"class": "form-control custom-input", "placeholder": "Enter Unit Price", "step": "0.01", "onfocus": "if(this.value=='0')this.value=''"})
-        self.fields["minimum_threshold"].widget.attrs.update({"class": "form-control custom-input", "placeholder": "Enter minimum threshold", "step": "0.01", "onfocus": "if(this.value=='0')this.value=''"})
+        self.fields["material_quantity"].widget.attrs.update({"class": "form-control custom-input", "placeholder": "Enter quantity", "onfocus": "if(this.value=='0')this.value=''", "onkeydown": "return event.key !== 'e' && event.key !== 'E' && event.key !== '+' && event.key !== '-'"})
+        self.fields["material_unitprice"].widget.attrs.update({"class": "form-control custom-input", "placeholder": "Enter Unit Price", "step": "0.01", "onfocus": "if(this.value=='0')this.value=''", "onkeydown": "return event.key !== 'e' && event.key !== 'E' && event.key !== '+' && event.key !== '-'"})
+        self.fields["minimum_threshold"].widget.attrs.update({"class": "form-control custom-input", "placeholder": "Enter minimum threshold", "step": "0.01", "onfocus": "if(this.value=='0')this.value=''", "onkeydown": "return event.key !== 'e' && event.key !== 'E' && event.key !== '+' && event.key !== '-'"})
 
         self.fields["material_unit"].queryset = MaterialUnit.objects.none()
 
@@ -38,6 +39,27 @@ class RawMaterialForm(forms.ModelForm):
             self.fields["material_unit"].queryset = MaterialUnit.objects.filter(
                 category=self.instance.material_category
             ).order_by("unit_name")
+
+    def clean_material_name(self):
+        name = self.cleaned_data.get('material_name', '').strip()
+        if not name:
+            raise forms.ValidationError("Material name cannot be empty.")
+        if len(name) < 2:
+            raise forms.ValidationError("Material name must be at least 2 characters.")
+        if not all(c.isalpha() or c.isspace() or c in "-_()./'" for c in name):
+            raise forms.ValidationError("Invalid material name. Only letters and special characters (- _ ( ) . / ') are allowed.")
+        return name
+
+    def clean(self):
+        cleaned_data = super().clean()
+        category = cleaned_data.get('material_category')
+        unit = cleaned_data.get('material_unit')
+
+        if not category:
+            raise forms.ValidationError("Please select a category.")
+        if not unit:
+            raise forms.ValidationError("Please select a unit.")
+        return cleaned_data
 
 class ProductForm(forms.ModelForm):
     class Meta:
@@ -68,6 +90,12 @@ class AddEmployeeForm(forms.Form):
             'placeholder': 'Enter Employee Name',
         })
     )
+    employee_role = forms.ChoiceField(
+        choices=[('', 'Select Role')] + list(EmployeeRole.choices),
+        widget=forms.Select(attrs={
+            'class': 'form-select custom-input',
+        })
+    )
 
     def clean_employee_name(self):
         name = self.cleaned_data.get('employee_name', '').strip()
@@ -78,12 +106,7 @@ class AddEmployeeForm(forms.Form):
         if not all(c.isalpha() or c.isspace() or c in ".-'" for c in name):
             raise forms.ValidationError("Employee name can only contain letters, spaces, hyphens, periods, and apostrophes.")
         return name
-    employee_role = forms.ChoiceField(
-        choices=[('', 'Select Role')] + list(EmployeeRole.choices),
-        widget=forms.Select(attrs={
-            'class': 'form-select custom-input',
-        })
-    )
+
 
 class EditEmployeeNameForm(forms.ModelForm):
     class Meta:

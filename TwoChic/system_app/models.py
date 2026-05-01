@@ -53,7 +53,7 @@ class RawMaterial(models.Model):
     )
 
     def clean(self):
-        if self.material_unit.category != self.material_category:
+        if self.material_unit_id and self.material_unit.category != self.material_category:
             raise ValidationError("Selected unit does not match material category.")
     
     def __str__(self):

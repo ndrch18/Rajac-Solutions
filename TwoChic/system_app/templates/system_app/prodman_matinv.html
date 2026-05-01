@@ -158,7 +158,7 @@
 
 
 <!-- LOG RAW MATERIAL MODAL -->
-<div class="modal fade" id="logMaterialModal" tabindex="-1">
+<div class="modal fade" id="logMaterialModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
   <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
     <div class="modal-content custom-modal">
       <div class="modal-body p-4">
@@ -197,7 +197,7 @@
         </form>
       </div>
       <div class="modal-footer" style="border:none; padding:12px 20px;">
-        <button type="button" class="btn cancel-btn" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn cancel-btn me-3" onclick="window.location.href=window.location.pathname + '?category={{ selected_category }}&q={{ q }}&sort={{ sort }}'">Cancel</button>
         <button type="submit" form="{{ form.prefix }}" class="btn add-btn" onclick="this.closest('.modal').querySelector('form').submit()">Add</button>
       </div>
     </div>
@@ -318,8 +318,13 @@
 
 {% if form.errors %}
 <script>
-  const modal = new bootstrap.Modal(document.getElementById('logMaterialModal'));
-  modal.show();
+  document.addEventListener("DOMContentLoaded", function () {
+    const modal = new bootstrap.Modal(document.getElementById('logMaterialModal'), {
+      backdrop: 'static',
+      keyboard: false
+    });
+    modal.show();
+  });
 </script>
 {% endif %}
 
