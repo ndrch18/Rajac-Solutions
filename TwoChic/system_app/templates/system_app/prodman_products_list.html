@@ -12,8 +12,17 @@
         <h6 class="mb-0 fw-500">Products List</h6>
     </div>
 
+    <!-- SEARCH -->
+    <div class="input-group mb-3 shadow-sm">
+        <span class="input-group-text bg-white border-0 ps-3">
+            <span class="material-icons text-muted">search</span>
+        </span>
+        <input type="text" id="productSearch" class="form-control border-0"
+               placeholder="Search products..." oninput="filterProducts()">
+    </div>
+
     {% if products %}
-    <div class="row g-3">
+    <div class="row g-3" id="productGrid">
 
         {% for product in products %}
         <div class="col-6 col-md-4 col-lg-3">
@@ -73,7 +82,7 @@
                                name="quantity"
                                min="1"
                                class="form-control form-control-sm mb-2"
-                               placeholder="Qty"
+                               placeholder="Order Qty"
                                id="qty_{{ product.id }}">
 
                         <p id="err_{{ product.id }}" style="font-size:11px; color:#e05a5a; display:none; margin-bottom:4px;">Please enter a quantity.</p>
@@ -95,6 +104,8 @@
     <a href="{% url 'prodman_order_summary' %}" class="btn btn-primary mt-4 mb-4">
         View Order
     </a>
+
+    <p id="noResults" style="display:none; text-align:center; color:#aaa; font-size:13px;">No products found.</p>
 
     {% endif %}
 
@@ -132,6 +143,22 @@
     }
     errMsg.style.display = 'none';
     btn.closest('form').submit();
+}
+
+function filterProducts() {
+    const q = document.getElementById('productSearch').value.toLowerCase();
+    const cards = document.querySelectorAll('#productGrid > div');
+    let visible = 0;
+    cards.forEach(card => {
+        const name = card.querySelector('.fw-semibold').textContent.toLowerCase();
+        if (name.includes(q)) {
+            card.style.display = '';
+            visible++;
+        } else {
+            card.style.display = 'none';
+        }
+    });
+    document.getElementById('noResults').style.display = visible === 0 ? 'block' : 'none';
 }
 
 document.addEventListener("DOMContentLoaded", function () {
