@@ -38,7 +38,8 @@
                 <input type="hidden" name="action" value="update_qty">
                 <div class="d-flex align-items-center gap-2">
                     <input type="number" name="quantity" id="qtyInput" min="0" value="{{ product.quantity }}"
-                           class="form-control" style="width:100px; font-size:14px;">
+                           class="form-control" style="width:100px; font-size:14px;"
+                           onfocus="if(parseFloat(this.value)===parseFloat('{{ product.quantity }}'))this.select()">
                     <button type="submit" class="btn btn-sm" style="background:#92d193; color:#000; border:none; border-radius:8px; padding:5px 14px;">Save</button>
                     <button type="button" class="btn btn-sm" style="background:#b8babb; color:#000; border:none; border-radius:8px; padding:5px 14px;" onclick="toggleQtyEdit()">Cancel</button>
                 </div>

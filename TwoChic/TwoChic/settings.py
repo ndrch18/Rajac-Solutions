@@ -75,8 +75,12 @@ WSGI_APPLICATION = 'TwoChic.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'ENGINE': 'django.db.backends.mysql',
+        'NAME': 'twochic_cims',
+        'USER': 'root',
+        'PASSWORD': 'Carlosuy13579',
+        'HOST': 'localhost',
+        'PORT': '3306',
     }
 }
 
