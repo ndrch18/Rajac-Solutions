@@ -50,6 +50,30 @@ class RawMaterialForm(forms.ModelForm):
             raise forms.ValidationError("Invalid material name. Only letters and special characters (- _ ( ) . / ') are allowed.")
         return name
 
+    def clean_material_quantity(self):
+        qty = self.cleaned_data.get('material_quantity')
+        if qty is None or qty == '':
+            raise forms.ValidationError("Quantity cannot be blank.")
+        if qty < 0:
+            raise forms.ValidationError("Quantity cannot be negative.")
+        return qty
+
+    def clean_material_unitprice(self):
+        price = self.cleaned_data.get('material_unitprice')
+        if price is None or price == '':
+            raise forms.ValidationError("Unit price cannot be blank.")
+        if price < 0:
+            raise forms.ValidationError("Unit price cannot be negative.")
+        return price
+
+    def clean_minimum_threshold(self):
+        threshold = self.cleaned_data.get('minimum_threshold')
+        if threshold is None or threshold == '':
+            raise forms.ValidationError("Minimum threshold cannot be blank.")
+        if threshold < 0:
+            raise forms.ValidationError("Minimum threshold cannot be negative.")
+        return threshold
+
     def clean(self):
         cleaned_data = super().clean()
         category = cleaned_data.get('material_category')

@@ -40,16 +40,14 @@ class RawMaterial(models.Model):
         on_delete=models.PROTECT
     )
 
-    material_quantity = models.FloatField(default=0)
+    material_quantity = models.FloatField()
 
     material_unitprice = models.FloatField(
-        default=0,
         validators=[MinValueValidator(0.0)]
     )
 
     minimum_threshold = models.FloatField(
-    default=0,
-    validators=[MinValueValidator(0.0)]
+        validators=[MinValueValidator(0.0)]
     )
 
     def clean(self):

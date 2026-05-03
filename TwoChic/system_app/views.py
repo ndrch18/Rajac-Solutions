@@ -87,6 +87,8 @@ def change_password_view(request):
             message = "New password cannot be empty."
         elif new_pw != confirm_pw:
             message = "New passwords do not match."
+        elif new_pw == current_pw:
+            message = "New password cannot be the same as your current password."
         else:
             account.password = new_pw
             account.save()

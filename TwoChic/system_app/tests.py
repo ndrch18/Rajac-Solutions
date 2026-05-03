@@ -186,7 +186,17 @@ class RoleBasedAccessControlTests(TestCase):
         response = self.client.get(reverse('prodemp_products_list'))
         self.assertEqual(response.status_code, 200)
 
+    # TC-00-19: Production Employee can access material inventory
+    def test_prodemp_can_access_material_inventory(self):
+        login_as_prodemp(self.client)
+        response = self.client.get(reverse('prodemp_matinv'))
+        self.assertEqual(response.status_code, 200)
 
+    # TC-00-20: Owner can access material inventory
+    def test_owner_can_access_material_inventory(self):
+        login_as_owner(self.client)
+        response = self.client.get(reverse('prodman_matinv'))
+        self.assertNotEqual(response.status_code, 302)
 # ============================================================
 # TEST SPECIFICATION #01 — LOGIN / LOGOUT
 # ============================================================
@@ -1056,3 +1066,4 @@ class EmployeeManagementTests(TestCase):
             'employee_role': 'production_manager'
         })
         self.assertEqual(Employee.objects.count(), 0)
+
