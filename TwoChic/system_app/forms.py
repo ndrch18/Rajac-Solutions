@@ -81,6 +81,12 @@ class ProductForm(forms.ModelForm):
             'class': 'form-select custom-input',
         })
 
+    def clean_product_name(self):
+        name = self.cleaned_data.get('product_name', '').strip()
+        if Product.objects.filter(product_name=name).exists():
+            raise forms.ValidationError("A product with this name already exists.")
+        return name
+
 
 class AddEmployeeForm(forms.Form):
     employee_name = forms.CharField(

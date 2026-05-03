@@ -235,6 +235,9 @@ def prodemp_homepage(request):
 def prodman_matinv(request):
     if not request.session.get('account_id'):
         return redirect('login')
+    employee_id = request.session.get('employee_id', '')
+    if not employee_id.startswith('1'):
+        return redirect('login')
 
     q = (request.GET.get('q') or "").strip()
     category = (request.GET.get('category') or "all").strip()
@@ -310,6 +313,7 @@ def prodman_matinv(request):
     context = {
         "materials": qs,
         "selected_category": category,
+        "user_role": request.session.get('employee_id', '')[:1],
         "q": q,
         "sort": sort,
         "as_of": timezone.localtime(timezone.now()),
@@ -649,10 +653,37 @@ def employee_materials(request):
     if not request.session.get('account_id'):
         return redirect('login')
 
-    materials = RawMaterial.objects.all().order_by('material_name')
+    q = (request.GET.get('q') or "").strip()
+    category = (request.GET.get('category') or "all").strip()
+    sort = (request.GET.get('sort') or "alpha").strip()
 
-    return render(request, 'system_app/prodemp_matinv.html', {
-        'materials': materials
+    qs = RawMaterial.objects.all()
+
+    if category in {"fabrics", "trims", "accessories"}:
+        qs = qs.filter(material_category=category)
+    if q:
+        qs = qs.filter(material_name__icontains=q)
+    if sort == "highest":
+        qs = qs.order_by("-material_quantity", "material_name")
+    elif sort == "lowest":
+        qs = qs.order_by("material_quantity", "material_name")
+    elif sort == "alpha_desc":
+        qs = qs.order_by("-material_name")
+    else:
+        qs = qs.order_by("material_name")
+
+    return render(request, 'system_app/prod_matinv.html', {
+        'materials': qs,
+        'selected_category': category,
+        'q': q,
+        'sort': sort,
+        'as_of': timezone.localtime(timezone.now()),
+        'category_choices': [
+            ("all", "All"),
+            ("fabrics", "Fabrics"),
+            ("trims", "Trims"),
+            ("accessories", "Accessories"),
+        ],
     })
 
 def employee_products(request):
@@ -848,10 +879,14 @@ def prodemp_product_detail(request, pk):
 
 # DELETE PRODUCT
 def owner_delete_product(request, pk):
+    if not request.session.get('account_id'):
+        return redirect('login')
+    employee_id = request.session.get('employee_id', '')
+    if not employee_id.startswith('0'):
+        return redirect('login')
     if request.method == "POST":
         product = Product.objects.get(pk=pk)
         product.delete()
-
     return redirect('owner_products_list')
 
 # EDIT PRODUCT
