@@ -267,6 +267,7 @@ def prodman_matinv(request):
         if form.is_valid():
             obj = form.save(commit=False)
             obj.save()
+            request.session['material_message'] = "Material added successfully."
             params = {}
             if category:
                 params["category"] = category
@@ -316,6 +317,7 @@ def prodman_matinv(request):
         "materials": qs,
         "selected_category": category,
         "user_role": request.session.get('employee_id', '')[:1],
+        "material_message": request.session.pop('material_message', ''),
         "q": q,
         "sort": sort,
         "as_of": timezone.localtime(timezone.now()),
@@ -429,6 +431,7 @@ def edit_raw_material(request, pk):
         if form.is_valid():
             obj = form.save(commit=False)
             obj.save()
+            request.session['material_message'] = "Material updated successfully."
 
             params = {}
             if category:
@@ -465,7 +468,11 @@ def delete_raw_material(request, pk):
     sort = (request.GET.get("sort") or "alpha").strip()
 
     if request.method == "POST":
-        material.delete()
+        if ProductMaterial.objects.filter(raw_material=material).exists():
+            request.session['material_message'] = "Cannot delete this material as it is linked to a product."
+        else:
+            material.delete()
+            request.session['material_message'] = "Material deleted successfully."
 
     params = {}
     if category:
@@ -621,7 +628,7 @@ def owner_add_product(request):
 
     last = Product.objects.order_by('-id').first()
     next_num = (last.id + 1) if last else 1
-    next_product_id = f'#{next_num:05d}'
+    next_product_id = f'#{next_num:04d}'
 
     message = ''
     form = ProductForm()
@@ -778,13 +785,14 @@ def owner_product_detail(request, pk):
         if price:
             product.price = float(price)
             product.save()
-        return redirect('owner_product_detail', pk=pk)
+        return redirect(f"{reverse('owner_product_detail', args=[pk])}?saved=1")
 
     return render(request, 'system_app/owner_product_detail.html', {
         'product': product,
         'product_materials': product_materials,
         'materials_breakdown': materials_breakdown,
         'total_cost': total_cost,
+        'product_message': request.session.pop('product_message', ''),
     })
 
 
@@ -888,7 +896,14 @@ def owner_delete_product(request, pk):
         return redirect('login')
     if request.method == "POST":
         product = Product.objects.get(pk=pk)
+        confirm = request.POST.get('confirm_delete')
+        has_materials = ProductMaterial.objects.filter(product=product).exists()
+        if has_materials and confirm != 'yes':
+            request.session['delete_warning'] = f"'{product.product_name}' has materials linked to it. Are you sure you want to delete it?"
+            request.session['delete_product_id'] = pk
+            return redirect('owner_product_detail', pk=pk)
         product.delete()
+        request.session['product_message'] = "Product deleted successfully."
     return redirect('owner_products_list')
 
 # EDIT PRODUCT
@@ -899,10 +914,17 @@ def owner_edit_product(request, pk):
     product = Product.objects.get(pk=pk)
 
     if request.method == "POST":
-        product.product_name = request.POST.get("product_name")
+        new_name = request.POST.get("product_name", "").strip()
+        if Product.objects.filter(product_name__iexact=new_name).exclude(pk=product.pk).exists():
+            return render(request, 'system_app/owner_edit_product.html', {
+                'product': product,
+                'categories': ProductCategory,
+                'collections': ProductCollection,
+                'error': "A product with this name already exists."
+            })
+        product.product_name = new_name
         product.product_category = request.POST.get("product_category")
         product.product_collection = request.POST.get("product_collection")
-        product.price = request.POST.get("price")
         product.save()
         return redirect('owner_product_detail', pk=product.id)
 

@@ -48,6 +48,11 @@ class RawMaterialForm(forms.ModelForm):
             raise forms.ValidationError("Material name must be at least 2 characters.")
         if not all(c.isalpha() or c.isspace() or c in "-_()./'" for c in name):
             raise forms.ValidationError("Invalid material name. Only letters and special characters (- _ ( ) . / ') are allowed.")
+        qs = RawMaterial.objects.filter(material_name__iexact=name)
+        if self.instance and self.instance.pk:
+            qs = qs.exclude(pk=self.instance.pk)
+        if qs.exists():
+            raise forms.ValidationError("A material with this name already exists.")
         return name
 
     def clean_material_quantity(self):
@@ -107,7 +112,12 @@ class ProductForm(forms.ModelForm):
 
     def clean_product_name(self):
         name = self.cleaned_data.get('product_name', '').strip()
-        if Product.objects.filter(product_name=name).exists():
+        if not name:
+            raise forms.ValidationError("Product name cannot be empty.")
+        qs = Product.objects.filter(product_name__iexact=name)
+        if self.instance and self.instance.pk:
+            qs = qs.exclude(pk=self.instance.pk)
+        if qs.exists():
             raise forms.ValidationError("A product with this name already exists.")
         return name
 
@@ -135,6 +145,9 @@ class AddEmployeeForm(forms.Form):
             raise forms.ValidationError("Employee name must be at least 2 characters.")
         if not all(c.isalpha() or c.isspace() or c in ".-'" for c in name):
             raise forms.ValidationError("Employee name can only contain letters, spaces, hyphens, periods, and apostrophes.")
+        role = self.data.get('employee_role')
+        if role and Employee.objects.filter(employee_name__iexact=name, employee_role=role).exists():
+            raise forms.ValidationError("An employee with this name already exists in this role.")
         return name
 
 

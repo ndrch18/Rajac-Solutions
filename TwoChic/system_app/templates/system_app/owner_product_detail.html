@@ -12,6 +12,10 @@
         <h6 class="mb-0 fw-500">Product Details</h6>
     </div>
 
+    <div id="saveMsg" style="display:none;" class="alert alert-success text-center mt-2" role="alert">
+        Retail price saved successfully.
+    </div>
+
     <div class="card shadow-sm p-4" style="border-radius:12px;">
 
         <!-- IMAGE -->
@@ -45,9 +49,10 @@
 
             <form action="{% url 'owner_delete_product' product.id %}" method="POST" class="m-0">
                 {% csrf_token %}
+                <input type="hidden" name="confirm_delete" value="yes">
                 <button type="submit"
                         class="btn btn-danger btn-sm px-3"
-                        onclick="return confirm('Are you sure you want to delete this product?');">
+                        onclick="{% if product_materials %}return confirm('This product has materials linked to it. Are you sure you want to delete it?'){% else %}return confirm('Are you sure you want to delete this product?'){% endif %}">
                     Delete
                 </button>
             </form>
@@ -164,6 +169,7 @@
           </div>
 
           <!-- Action Buttons -->
+          <div id="priceError" style="display:none; color:#e05a5a; font-size:12px; text-align:center; margin-bottom:4px;"></div>
           <div class="d-flex gap-2 mt-2">
             <button data-bs-dismiss="modal" style="flex:1; padding:10px; border-radius:8px; border:none; background:#b8babb; font-weight:600; font-size:13px; cursor:pointer;">Cancel</button>
             <button onclick="deleteProduct()" style="flex:1; padding:10px; border-radius:8px; border:none; background:#eaa2a1; font-weight:600; font-size:13px; cursor:pointer;">Delete</button>
@@ -207,6 +213,15 @@
 </style>
 
 <script>
+
+document.addEventListener("DOMContentLoaded", function () {
+    if (new URLSearchParams(window.location.search).get('saved') === '1') {
+        document.getElementById('saveMsg').style.display = 'block';
+        window.scrollTo(0, 0);
+        window.history.replaceState({}, '', window.location.pathname);
+    }
+});
+
 const TOTAL_COST = {{ total_cost }};
 const TOTAL_QTY = {{ product.quantity }};
 
@@ -218,20 +233,54 @@ function toggleDetails() {
 
 function savePrice() {
     const price = document.getElementById('retailPriceInput').value;
-    fetch('', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/x-www-form-urlencoded', 'X-CSRFToken': '{{ csrf_token }}'},
-        body: `price=${price}`
-    }).then(() => location.reload());
+    const priceVal = parseFloat(price);
+    if (!price || price === '') {
+        document.getElementById('priceError').style.display = 'block';
+        document.getElementById('priceError').textContent = 'Retail price cannot be blank.';
+        return;
+    }
+    if (priceVal < 0) {
+        document.getElementById('priceError').style.display = 'block';
+        document.getElementById('priceError').textContent = 'Retail price cannot be negative.';
+        return;
+    }
+    if (priceVal === 0) {
+        document.getElementById('priceError').style.display = 'block';
+        document.getElementById('priceError').textContent = 'Retail price must be greater than 0.';
+        return;
+    }
+    document.getElementById('priceError').style.display = 'none';
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = '';
+    const csrf = document.createElement('input');
+    csrf.type = 'hidden';
+    csrf.name = 'csrfmiddlewaretoken';
+    csrf.value = '{{ csrf_token }}';
+    const priceInput = document.createElement('input');
+    priceInput.type = 'hidden';
+    priceInput.name = 'price';
+    priceInput.value = price;
+    form.appendChild(csrf);
+    form.appendChild(priceInput);
+    document.body.appendChild(form);
+    form.submit();
 }
 
 function deleteProduct() {
-    if (confirm('Are you sure you want to delete this product?')) {
-        fetch("{% url 'owner_delete_product' product.id %}", {
-            method: 'POST',
-            headers: {'X-CSRFToken': '{{ csrf_token }}'}
-        }).then(() => window.location.href = "{% url 'owner_products_list' %}");
-    }
+    {% if product_materials %}
+    const confirmed = confirm('This product has materials linked to it. Are you sure you want to delete it?');
+    if (!confirmed) return;
+    const body = 'confirm_delete=yes';
+    {% else %}
+    if (!confirm('Are you sure you want to delete this product?')) return;
+    const body = '';
+    {% endif %}
+    fetch("{% url 'owner_delete_product' product.id %}", {
+        method: 'POST',
+        headers: {'Content-Type': 'application/x-www-form-urlencoded', 'X-CSRFToken': '{{ csrf_token }}'},
+        body: body
+    }).then(() => window.location.href = "{% url 'owner_products_list' %}");
 }
 
 function computeSuggested() {

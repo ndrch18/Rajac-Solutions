@@ -38,6 +38,12 @@
     </div>
   </div>
 
+  {% if material_message %}
+  <div class="alert alert-success text-center mt-2 fade show" role="alert">
+      {{ material_message }}
+  </div>
+  {% endif %}
+
   <!-- Buttons -->
   <div class="d-flex flex-column align-items-center gap-3 mb-4">
 
@@ -241,6 +247,7 @@
           <div class="mb-3">
             <label class="form-label fw-semibold">Minimum Threshold:</label>
             {{ edit_form.minimum_threshold }}
+            {% if edit_form.minimum_threshold.errors %}<div class="invalid-feedback d-block">{{ edit_form.minimum_threshold.errors.0 }}</div>{% endif %}
           </div>
         </form>
         {% endif %}

@@ -99,7 +99,7 @@ class Product(models.Model):
         if not self.product_id:
             last = Product.objects.order_by('-id').first()
             next_num = (last.id + 1) if last else 1
-            self.product_id = f'#{next_num:05d}'
+            self.product_id = f'#{next_num:04d}'
         super().save(*args, **kwargs)
 
     def __str__(self):
