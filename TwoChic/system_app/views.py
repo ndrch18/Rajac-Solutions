@@ -815,12 +815,20 @@ def prodman_product_detail(request, pk):
             if new_qty is not None and new_qty != '':
                 try:
                     new_qty = int(new_qty)
-                    qty_to_add = new_qty - product.quantity
-                    if qty_to_add > 0:
+                    qty_diff = new_qty - product.quantity
+                    if qty_diff > 0:
+                        # Quantity increased — deduct materials
                         for pm in product_materials:
                             rm = pm.raw_material
-                            deduction = pm.quantity_per_garment * qty_to_add
+                            deduction = pm.quantity_per_garment * qty_diff
                             rm.material_quantity = max(0, rm.material_quantity - deduction)
+                            rm.save()
+                    elif qty_diff < 0:
+                        # Quantity decreased — add back materials
+                        for pm in product_materials:
+                            rm = pm.raw_material
+                            restock = pm.quantity_per_garment * abs(qty_diff)
+                            rm.material_quantity += restock
                             rm.save()
                     product.quantity = new_qty
                     product.save()
@@ -1334,3 +1342,89 @@ def export_sales_pdf(request):
 
     doc.build(elements)
     return response   
+
+
+import subprocess
+import os
+from django.http import FileResponse
+
+def owner_backup_restore(request):
+    if not request.session.get('account_id'):
+        return redirect('login')
+    employee_id = request.session.get('employee_id', '')
+    if not employee_id.startswith('0'):
+        return redirect('login')
+
+    message = ''
+    message_type = ''
+
+    # RESTORE
+    if request.method == 'POST':
+        backup_file = request.FILES.get('backup_file')
+        if not backup_file:
+            message = 'Please select a backup file.'
+            message_type = 'danger'
+        elif not backup_file.name.endswith('.sql'):
+            message = 'Invalid file type. Please upload a .sql file.'
+            message_type = 'danger'
+        else:
+            from django.conf import settings
+            db = settings.DATABASES['default']
+            mysql_path = r"C:\Program Files\MySQL\MySQL Server 9.7\bin\mysql.exe"
+            try:
+                sql_content = backup_file.read().decode('utf-8')
+                process = subprocess.run([
+                    mysql_path,
+                    f"--user={db['USER']}",
+                    f"--password={db['PASSWORD']}",
+                    db['NAME']
+                ], input=sql_content, capture_output=True, text=True)
+                if process.returncode == 0:
+                    account_id = request.session.get('account_id')
+                    employee_id = request.session.get('employee_id')
+                    employee_name = request.session.get('employee_name')
+                    request.session.flush()
+                    request.session['account_id'] = account_id
+                    request.session['employee_id'] = employee_id
+                    request.session['employee_name'] = employee_name
+                    request.session['using_default_password'] = False
+                    message = 'Database restored successfully.'
+                    message_type = 'success'
+                else:
+                    message = f'Restore failed: {process.stderr}'
+                    message_type = 'danger'
+            except Exception as e:
+                message = f'Restore failed: {str(e)}'
+                message_type = 'danger'
+
+    # BACKUP
+    if request.GET.get('action') == 'backup':
+        from django.conf import settings
+        db = settings.DATABASES['default']
+        backup_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'backups')
+        os.makedirs(backup_dir, exist_ok=True)
+        filename = f"backup_{timezone.now().strftime('%Y%m%d_%H%M%S')}.sql"
+        filepath = os.path.join(backup_dir, filename)
+        mysqldump_path = r"C:\Program Files\MySQL\MySQL Server 9.7\bin\mysqldump.exe"
+        try:
+            with open(filepath, 'w') as f:
+                subprocess.run([
+                    mysqldump_path,
+                    f"--user={db['USER']}",
+                    f"--password={db['PASSWORD']}",
+                    '--default-character-set=utf8',
+                    '--no-tablespaces',
+                    '--set-gtid-purged=OFF',
+                    db['NAME']
+                ], stdout=f, check=True)
+            response = FileResponse(open(filepath, 'rb'), content_type='application/sql')
+            response['Content-Disposition'] = f'attachment; filename="{filename}"'
+            return response
+        except Exception as e:
+            message = f'Backup failed: {str(e)}'
+            message_type = 'danger'
+
+    return render(request, 'system_app/owner_backup_restore.html', {
+        'message': message,
+        'message_type': message_type,
+    })

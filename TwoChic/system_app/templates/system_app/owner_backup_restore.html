@@ -1,0 +1,47 @@
+{% extends 'system_app/base.html' %}
+
+{% block content %}
+<div class="container mt-4" style="max-width:480px;">
+
+    <div class="d-flex align-items-center mb-4 mt-2">
+        <a href="{% url 'owner_homepage' %}" class="btn btn-link p-0 text-dark me-3">
+            <span class="material-icons">arrow_back</span>
+        </a>
+        <h6 class="mb-0 fw-500">Backup & Restore</h6>
+    </div>
+
+    {% if message %}
+    <div class="alert alert-{{ message_type }}">{{ message }}</div>
+    {% endif %}
+
+    <!-- BACKUP -->
+    <div class="card shadow-sm p-4 mb-4" style="border-radius:12px;">
+        <h6 class="fw-semibold mb-2">Backup Database</h6>
+        <p class="text-muted" style="font-size:13px;">Download a backup of the current database. Save it to an external drive or cloud storage.</p>
+        <a href="?action=backup" class="btn w-100 fw-semibold"
+           style="background:#92d193; color:#000; border:none; border-radius:8px; padding:10px;">
+            <span class="material-icons align-middle" style="font-size:16px;">backup</span>
+            Download Backup
+        </a>
+    </div>
+
+    <!-- RESTORE -->
+    <div class="card shadow-sm p-4" style="border-radius:12px;">
+        <h6 class="fw-semibold mb-2">Restore Database</h6>
+        <p class="text-muted" style="font-size:13px;">Upload a previously downloaded <strong>.sql</strong> backup file to restore the database. This will overwrite all current data.</p>
+        <form method="POST" enctype="multipart/form-data">
+            {% csrf_token %}
+            <div class="mb-3">
+                <label class="form-label fw-semibold">Select Backup File (.sql)</label>
+                <input type="file" name="backup_file" accept=".sql" class="form-control">
+            </div>
+            <button type="submit" class="btn btn-danger w-100 fw-semibold"
+                    onclick="return confirm('Are you sure? This will overwrite all current data with the backup.')">
+                <span class="material-icons align-middle" style="font-size:16px;">restore</span>
+                Restore Database
+            </button>
+        </form>
+    </div>
+
+</div>
+{% endblock %}

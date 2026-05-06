@@ -46,4 +46,6 @@ urlpatterns = [
 
     path('owner/sales-report/export/xlsx/', views.export_sales_xlsx, name='export_sales_xlsx'),
     path('owner/sales-report/export/pdf/', views.export_sales_pdf, name='export_sales_pdf'),
+
+    path('owner/backup-restore/', views.owner_backup_restore, name='owner_backup_restore'),
 ]
