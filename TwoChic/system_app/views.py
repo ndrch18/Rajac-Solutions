@@ -1164,19 +1164,26 @@ from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, 
 from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.lib.units import cm
 
+from datetime import timedelta
+from django.utils import timezone
+
 def _filter_order_items(filter_type):
     qs = OrderItem.objects.select_related('order', 'product').order_by('-order__created_at')
-    now = timezone.now()
-    if filter_type == 'weekly':
+    now = timezone.localtime(timezone.now())
+
+    if filter_type == 'weekly':  # last 7 days
         start = now - timedelta(days=7)
         qs = qs.filter(order__created_at__gte=start)
-    elif filter_type == 'monthly':
-        qs = qs.filter(order__created_at__year=now.year, order__created_at__month=now.month)
-    elif filter_type == 'yearly':
-        qs = qs.filter(order__created_at__year=now.year)
+
+    elif filter_type == 'monthly':  # last 30 days
+        start = now - timedelta(days=30)
+        qs = qs.filter(order__created_at__gte=start)
+
+    elif filter_type == 'yearly':  # last 365 days
+        start = now - timedelta(days=365)
+        qs = qs.filter(order__created_at__gte=start)
+
     return qs
-
-
 def export_sales_xlsx(request):
     if not request.session.get('account_id'):
         return redirect('login')
@@ -1326,4 +1333,4 @@ def export_sales_pdf(request):
     elements.append(table)
 
     doc.build(elements)
-    return response
+    return response   

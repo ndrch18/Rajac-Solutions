@@ -14,16 +14,16 @@
                 <option value="monthly">This Month</option>
                 <option value="yearly">This Year</option>
             </select>
-            <a id="exportXlsx" href="{% url 'export_sales_xlsx' %}" class="btn btn-sm"
+            <button onclick="doExport('xlsx')" class="btn btn-sm"
                style="background:#92d193; color:#000; border:none; border-radius:8px; padding:6px 14px;">
                 <span class="material-icons align-middle" style="font-size:16px;">download</span>
                 Export Excel
-            </a>
-            <a id="exportPdf" href="{% url 'export_sales_pdf' %}" class="btn btn-sm"
+            </button>
+            <button onclick="doExport('pdf')" class="btn btn-sm"
                style="background:#eaa2a1; color:#000; border:none; border-radius:8px; padding:6px 14px;">
                 <span class="material-icons align-middle" style="font-size:16px;">picture_as_pdf</span>
                 Export PDF
-            </a>
+            </button>
         </div>
     </div>
 
@@ -123,11 +123,14 @@
 </div>
 
 <script>
-document.getElementById('exportFilter').addEventListener('change', function () {
-    const filter = this.value;
-    document.getElementById('exportXlsx').href = "{% url 'export_sales_xlsx' %}?filter=" + filter;
-    document.getElementById('exportPdf').href = "{% url 'export_sales_pdf' %}?filter=" + filter;
-});
+function doExport(type) {
+    const filter = document.getElementById('exportFilter').value;
+    if (type === 'xlsx') {
+        window.location.href = "{% url 'export_sales_xlsx' %}?filter=" + filter;
+    } else {
+        window.location.href = "{% url 'export_sales_pdf' %}?filter=" + filter;
+    }
+}
 </script>
 
 {% endblock %}
